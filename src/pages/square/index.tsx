@@ -8,7 +8,6 @@ import { Network } from '@/network'
 import Taro from '@tarojs/taro'
 import { useState, useEffect } from 'react'
 import { Search, Users, Flame } from 'lucide-react-taro'
-import { useUserStore } from '@/store/user-store'
 
 interface CircleItem {
   id: string
@@ -30,31 +29,26 @@ const CATEGORIES = [
   { key: '生活', label: '生活' },
 ]
 
-export default function Index() {
-  const userInfo = useUserStore((s) => s.userInfo)
+export default function Square() {
   const [circles, setCircles] = useState<CircleItem[]>([])
   const [category, setCategory] = useState('all')
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!userInfo) {
-      Taro.redirectTo({ url: '/pages/login/index' })
-      return
-    }
     loadCircles()
-  }, [category, userInfo])
+  }, [category])
 
   const loadCircles = async () => {
     setLoading(true)
     try {
-      const params: Record<string, string> = { user_id: userInfo?.id || '' }
+      const params: Record<string, string> = {}
       if (category !== 'all') params.category = category
       if (keyword) params.keyword = keyword
 
       const query = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
       const res = await Network.request({
-        url: `/api/circles?${query}`,
+        url: `/api/circles${query ? `?${query}` : ''}`,
         method: 'GET',
       })
       console.log('Load circles response:', res.data)
@@ -78,18 +72,25 @@ export default function Index() {
       const res = await Network.request({
         url,
         method: 'POST',
-        data: { circle_id: circleId, user_id: userInfo?.id },
+        data: { circle_id: circleId },
       })
       console.log('Join/leave response:', res.data)
       if (res.data?.data) {
         setCircles((prev) =>
           prev.map((c) =>
             c.id === circleId
-              ? { ...c, is_joined: !isJoined, member_count: c.member_count + (isJoined ? -1 : 1) }
+              ? {
+                  ...c,
+                  is_joined: !isJoined,
+                  member_count: c.member_count + (isJoined ? -1 : 1),
+                }
               : c
           )
         )
-        Taro.showToast({ title: isJoined ? '已退出圈子' : '已加入圈子', icon: 'success' })
+        Taro.showToast({
+          title: isJoined ? '已退出圈子' : '已加入圈子',
+          icon: 'success',
+        })
       }
     } catch (err) {
       console.error('Join/leave circle failed:', err)
@@ -142,9 +143,11 @@ export default function Index() {
                   className="flex flex-row gap-3"
                   onClick={() => Taro.navigateTo({ url: `/pages/circle-detail/index?id=${circle.id}` })}
                 >
+                  {/* 圈子封面 */}
                   <View className="w-16 h-16 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
                     <Text className="block text-2xl">{circle.name[0]}</Text>
                   </View>
+                  {/* 圈子信息 */}
                   <View className="flex-1 min-w-0">
                     <Text className="block text-sm font-semibold text-neutral-900">{circle.name}</Text>
                     <Text className="block text-xs text-neutral-500 mt-1 line-clamp-1">{circle.description}</Text>
@@ -160,6 +163,7 @@ export default function Index() {
                       <Badge variant="outline" className="text-xs">{circle.category}</Badge>
                     </View>
                   </View>
+                  {/* 加入按钮 */}
                   <View className="flex items-center flex-shrink-0">
                     <Button
                       size="sm"
