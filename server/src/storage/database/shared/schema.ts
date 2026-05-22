@@ -14,10 +14,12 @@ export const users = pgTable("users", {
   nickname: varchar("nickname", { length: 64 }).notNull().default("Hobby用户"),
   avatar_url: text("avatar_url"),
   interest_tags: jsonb("interest_tags").default([]),
+  role: varchar("role", { length: 20 }).notNull().default("user"), // user / admin
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp("updated_at", { withTimezone: true }),
 }, (table) => [
   index("users_openid_idx").on(table.openid),
+  index("users_role_idx").on(table.role),
 ]);
 
 // ===== Circles =====
@@ -28,13 +30,12 @@ export const circles = pgTable("circles", {
   description: text("description"),
   cover_url: text("cover_url"),
   tags: jsonb("tags").default([]),
-  owner_id: varchar("owner_id", { length: 36 }).notNull().references(() => users.id),
-  member_count: integer("member_count").notNull().default(1),
+  member_count: integer("member_count").notNull().default(0),
   activity_score: integer("activity_score").notNull().default(0),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updated_at: timestamp("updated_at", { withTimezone: true }),
 }, (table) => [
   index("circles_category_idx").on(table.category),
-  index("circles_owner_id_idx").on(table.owner_id),
   index("circles_activity_score_idx").on(table.activity_score),
 ]);
 
@@ -43,11 +44,10 @@ export const circleMembers = pgTable("circle_members", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   circle_id: varchar("circle_id", { length: 36 }).notNull().references(() => circles.id, { onDelete: "cascade" }),
   user_id: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
-  role: varchar("role", { length: 20 }).notNull().default("member"), // owner/admin/member
   joined_at: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("circle_members_circle_id_idx").on(table.circle_id),
-  index("circle_members_user_id_idx").on(table.user_id),
+  index("circle_members_user_id_idx").on(table.circle_id, table.user_id),
 ]);
 
 // ===== Posts =====
@@ -58,7 +58,6 @@ export const posts = pgTable("posts", {
   content: text("content").notNull(),
   images: jsonb("images").default([]),
   tags: jsonb("tags").default([]),
-  mention_owner: boolean("mention_owner").default(false),
   is_draft: boolean("is_draft").default(false),
   likes_count: integer("likes_count").notNull().default(0),
   comments_count: integer("comments_count").notNull().default(0),
@@ -87,8 +86,8 @@ export const comments = pgTable("comments", {
   post_id: varchar("post_id", { length: 36 }).notNull().references(() => posts.id, { onDelete: "cascade" }),
   user_id: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
   content: text("content").notNull(),
-  parent_id: varchar("parent_id", { length: 36 }), // for nested replies
-  reply_to_id: varchar("reply_to_id", { length: 36 }), // reply to specific user
+  parent_id: varchar("parent_id", { length: 36 }),
+  reply_to_id: varchar("reply_to_id", { length: 36 }),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("comments_post_id_idx").on(table.post_id),
@@ -110,7 +109,7 @@ export const activities = pgTable("activities", {
   level_requirement: varchar("level_requirement", { length: 64 }),
   max_participants: integer("max_participants"),
   fee_description: text("fee_description"),
-  status: varchar("status", { length: 20 }).notNull().default("recruiting"), // recruiting/full/cancelled/completed
+  status: varchar("status", { length: 20 }).notNull().default("recruiting"),
   auto_approve: boolean("auto_approve").default(false),
   safety_agreed: boolean("safety_agreed").notNull().default(false),
   emergency_contact: varchar("emergency_contact", { length: 128 }),
@@ -128,28 +127,34 @@ export const activityRegistrations = pgTable("activity_registrations", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   activity_id: varchar("activity_id", { length: 36 }).notNull().references(() => activities.id, { onDelete: "cascade" }),
   user_id: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
-  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending/approved/rejected/cancelled
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("activity_registrations_activity_id_idx").on(table.activity_id),
   index("activity_registrations_user_id_idx").on(table.user_id),
 ]);
 
-// ===== Resources (资料库) =====
+// ===== Resources (资料库 - 多模板) =====
+// template_type: ranking(排行榜) / gallery(图集) / list(列表)
+// template_data 结构:
+//   ranking: { items: [{ rank, title, subtitle, score, cover_url, detail }], description }
+//   gallery: { items: [{ title, image_url, subtitle, link }], description }
+//   list:    { items: [{ title, subtitle, icon_url, tags: [] }], description }
 export const resources = pgTable("resources", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   circle_id: varchar("circle_id", { length: 36 }).notNull().references(() => circles.id, { onDelete: "cascade" }),
   title: varchar("title", { length: 128 }).notNull(),
-  resource_type: varchar("resource_type", { length: 32 }).notNull(), // ski-resort/equipment/route/etc
-  content: jsonb("content"), // structured data (parameters, maps, links, etc.)
+  template_type: varchar("template_type", { length: 32 }).notNull(), // ranking/gallery/list
+  description: text("description"),
   cover_url: text("cover_url"),
-  created_by: varchar("created_by", { length: 36 }).notNull().references(() => users.id),
-  is_template: boolean("is_template").default(false),
+  template_data: jsonb("template_data").default({}),
+  sort_order: integer("sort_order").notNull().default(0),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp("updated_at", { withTimezone: true }),
 }, (table) => [
   index("resources_circle_id_idx").on(table.circle_id),
-  index("resources_resource_type_idx").on(table.resource_type),
+  index("resources_template_type_idx").on(table.template_type),
+  index("resources_sort_order_idx").on(table.circle_id, table.sort_order),
 ]);
 
 // ===== Resource Submissions (补充/纠错审核) =====
@@ -159,7 +164,7 @@ export const resourceSubmissions = pgTable("resource_submissions", {
   user_id: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
   submission_type: varchar("submission_type", { length: 20 }).notNull(), // supplement/correction
   content: jsonb("content").notNull(),
-  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending/approved/rejected
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
   review_note: text("review_note"),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
@@ -172,7 +177,7 @@ export const resourceSubmissions = pgTable("resource_submissions", {
 export const messages = pgTable("messages", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   user_id: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
-  type: varchar("type", { length: 32 }).notNull(), // comment/registration/announcement/system
+  type: varchar("type", { length: 32 }).notNull(),
   title: varchar("title", { length: 128 }),
   content: text("content"),
   related_id: varchar("related_id", { length: 36 }),
@@ -185,27 +190,27 @@ export const messages = pgTable("messages", {
   index("messages_type_idx").on(table.type),
 ]);
 
-// ===== Notification Settings (免打扰设置) =====
+// ===== Notification Settings =====
 export const notificationSettings = pgTable("notification_settings", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   user_id: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
   circle_id: varchar("circle_id", { length: 36 }).references(() => circles.id),
-  type: varchar("type", { length: 32 }).notNull(), // comment/registration/announcement
+  type: varchar("type", { length: 32 }).notNull(),
   muted: boolean("muted").default(false),
 }, (table) => [
   index("notification_settings_user_id_idx").on(table.user_id),
   index("notification_settings_user_circle_idx").on(table.user_id, table.circle_id),
 ]);
 
-// ===== Reports (举报) =====
+// ===== Reports =====
 export const reports = pgTable("reports", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   reporter_id: varchar("reporter_id", { length: 36 }).notNull().references(() => users.id),
-  target_type: varchar("target_type", { length: 20 }).notNull(), // post/comment/user/activity
+  target_type: varchar("target_type", { length: 20 }).notNull(),
   target_id: varchar("target_id", { length: 36 }).notNull(),
   reason: varchar("reason", { length: 32 }).notNull(),
   description: text("description"),
-  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending/resolved/dismissed
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("reports_reporter_id_idx").on(table.reporter_id),
@@ -213,7 +218,7 @@ export const reports = pgTable("reports", {
   index("reports_status_idx").on(table.status),
 ]);
 
-// ===== Blocked Keywords (关键词过滤) =====
+// ===== Blocked Keywords =====
 export const blockedKeywords = pgTable("blocked_keywords", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   keyword: varchar("keyword", { length: 64 }).notNull().unique(),
@@ -223,12 +228,12 @@ export const blockedKeywords = pgTable("blocked_keywords", {
   index("blocked_keywords_keyword_idx").on(table.keyword),
 ]);
 
-// ===== Drafts (草稿) =====
+// ===== Drafts =====
 export const drafts = pgTable("drafts", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   user_id: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
   circle_id: varchar("circle_id", { length: 36 }).references(() => circles.id),
-  type: varchar("type", { length: 20 }).notNull(), // post/activity
+  type: varchar("type", { length: 20 }).notNull(),
   content: jsonb("content").notNull(),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp("updated_at", { withTimezone: true }),

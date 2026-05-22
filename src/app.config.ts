@@ -11,6 +11,9 @@ export default defineAppConfig({
     'pages/edit-profile/index',
     'pages/resource-detail/index',
     'pages/search/index',
+    'pages/admin-login/index',
+    'pages/admin/index',
+    'pages/admin-resource-edit/index',
     'pages/index/index'
   ],
   window: {

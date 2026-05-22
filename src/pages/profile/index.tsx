@@ -8,7 +8,7 @@ import { useUserStore } from '@/store/user-store'
 import { Network } from '@/network'
 import Taro from '@tarojs/taro'
 import { useState, useEffect } from 'react'
-import { Settings, ChevronRight, BookOpen, Users, FileText } from 'lucide-react-taro'
+import { Settings, ChevronRight, BookOpen, Users, FileText, ShieldCheck } from 'lucide-react-taro'
 
 interface CircleItem {
   id: string
@@ -28,13 +28,22 @@ export default function Profile() {
   const [circles, setCircles] = useState<CircleItem[]>([])
   const [posts, setPosts] = useState<PostItem[]>([])
   const [tags, setTags] = useState<string[]>([])
-
+  const [isAdmin, setIsAdmin] = useState(false)
   useEffect(() => {
     if (isLoggedIn && userInfo) {
       loadUserData()
       setTags(userInfo.interest_tags || [])
+      checkAdmin()
     }
   }, [isLoggedIn, userInfo?.id])
+
+  const checkAdmin = async () => {
+    if (!userInfo?.id) return
+    try {
+      const res = await Network.request({ url: `/api/admin/check`, data: { user_id: userInfo.id } })
+      if (res.data?.data?.isAdmin) setIsAdmin(true)
+    } catch (err) { console.error('Check admin failed:', err) }
+  }
 
   const loadUserData = async () => {
     if (!userInfo?.id) return
@@ -192,6 +201,18 @@ export default function Profile() {
       <Card className="mx-4">
         <CardContent className="p-4">
           <View className="space-y-0">
+            {isAdmin && (
+              <>
+                <View className="flex flex-row items-center justify-between py-3" onClick={() => Taro.navigateTo({ url: '/pages/admin/index' })}>
+                  <View className="flex flex-row items-center gap-3">
+                    <ShieldCheck size={16} color="#F97316" />
+                    <Text className="block text-sm text-orange-600 font-medium">管理后台</Text>
+                  </View>
+                  <ChevronRight size={16} color="#737373" />
+                </View>
+                <Separator />
+              </>
+            )}
             <View className="flex flex-row items-center justify-between py-3" onClick={handleEditProfile}>
               <View className="flex flex-row items-center gap-3">
                 <BookOpen size={16} color="#737373" />

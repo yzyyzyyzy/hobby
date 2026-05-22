@@ -23,7 +23,7 @@ export class PostsController {
   }
 
   @Post()
-  async createPost(@Body() body: { circle_id: string; user_id: string; content: string; images?: string[]; tags?: string[]; mention_owner?: boolean; is_draft?: boolean }) {
+  async createPost(@Body() body: { circle_id: string; user_id: string; content: string; images?: string[]; tags?: string[]; is_draft?: boolean }) {
     console.log('[Posts] POST /api/posts', JSON.stringify({ ...body, content: body.content?.slice(0, 50) }))
     const result = await this.postsService.createPost(body)
     return { code: 200, msg: 'success', data: result }

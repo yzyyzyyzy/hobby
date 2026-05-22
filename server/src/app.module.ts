@@ -9,6 +9,7 @@ import { ActivitiesModule } from '@/modules/activities/activities.module';
 import { ResourcesModule } from '@/modules/resources/resources.module';
 import { MessagesModule } from '@/modules/messages/messages.module';
 import { ReportsModule } from '@/modules/reports/reports.module';
+import { AdminModule } from '@/modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ReportsModule } from '@/modules/reports/reports.module';
     ResourcesModule,
     MessagesModule,
     ReportsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

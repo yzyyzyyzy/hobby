@@ -6,6 +6,7 @@ interface UserInfo {
   nickname: string
   avatar_url: string
   interest_tags: string[]
+  role?: string
 }
 
 interface UserState {

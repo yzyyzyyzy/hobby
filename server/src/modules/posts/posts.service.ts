@@ -75,7 +75,7 @@ export class PostsService {
 
   async createPost(body: {
     circle_id: string; user_id: string; content: string;
-    images?: string[]; tags?: string[]; mention_owner?: boolean; is_draft?: boolean;
+    images?: string[]; tags?: string[]; is_draft?: boolean;
   }) {
     const client = getSupabaseClient()
 
@@ -90,7 +90,6 @@ export class PostsService {
         content: body.content,
         images: body.images || [],
         tags: body.tags || [],
-        mention_owner: body.mention_owner || false,
         is_draft: body.is_draft || false,
       })
       .select()
