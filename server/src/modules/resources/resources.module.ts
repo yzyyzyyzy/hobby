@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common'
-import { CircleResourcesController, ResourcesController } from './resources.controller'
+import { ResourcesController } from './resources.controller'
 import { ResourcesService } from './resources.service'
 
 @Module({
-  controllers: [CircleResourcesController, ResourcesController],
+  controllers: [ResourcesController],
   providers: [ResourcesService],
   exports: [ResourcesService],
 })
