@@ -44,7 +44,7 @@ export default function AdminLogin() {
         }))
         Taro.showToast({ title: '登录成功', icon: 'success' })
         setTimeout(() => {
-          Taro.redirectTo({ url: '/pages/admin/index' })
+          Taro.navigateTo({ url: '/pages/admin/index' })
         }, 500)
       } else {
         Taro.showToast({ title: res.data?.msg || '登录失败', icon: 'none' })

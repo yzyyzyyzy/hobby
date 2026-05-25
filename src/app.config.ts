@@ -5,15 +5,15 @@ export default defineAppConfig({
     'pages/publish/index',
     'pages/profile/index',
     'pages/login/index',
+    'pages/admin-login/index',
+    'pages/admin/index',
+    'pages/admin-resource-edit/index',
     'pages/circle-detail/index',
     'pages/post-detail/index',
     'pages/activity-detail/index',
     'pages/edit-profile/index',
     'pages/resource-detail/index',
     'pages/search/index',
-    'pages/admin-login/index',
-    'pages/admin/index',
-    'pages/admin-resource-edit/index',
     'pages/index/index'
   ],
   window: {

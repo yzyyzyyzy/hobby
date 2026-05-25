@@ -65,12 +65,17 @@ export default function Profile() {
     Taro.navigateTo({ url: '/pages/login/index' })
   }
 
+  const handleAdminLogin = () => {
+    Taro.navigateTo({ url: '/pages/admin-login/index' })
+  }
+
   const handleEditProfile = () => {
     Taro.navigateTo({ url: '/pages/edit-profile/index' })
   }
 
   const handleLogout = () => {
     clearUserInfo()
+    setIsAdmin(false)
     Taro.showToast({ title: '已退出登录', icon: 'none' })
   }
 
@@ -80,9 +85,12 @@ export default function Profile() {
       <View className="flex flex-col items-center justify-center h-full bg-neutral-50 px-4">
         <Text className="block text-2xl font-bold text-neutral-900 mb-2">Hobby</Text>
         <Text className="block text-sm text-neutral-500 mb-8">登录后查看个人主页</Text>
-        <Button className="bg-orange-500 text-white rounded-xl px-8" onClick={handleLogin}>
+        <Button className="bg-orange-500 text-white rounded-xl px-8 mb-4" onClick={handleLogin}>
           <Text className="text-white">微信登录</Text>
         </Button>
+        <View className="mt-4" onClick={handleAdminLogin}>
+          <Text className="block text-sm text-orange-500 underline">管理员登录</Text>
+        </View>
       </View>
     )
   }
