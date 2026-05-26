@@ -14,8 +14,8 @@
 ---
 
 ## 2. 产品背景与目标
-
-![架构图](docs/images/myhobby.png)
+![架构图1](docs/images/myhobby2.png)
+![架构图2](docs/images/myhobby.png)
 
 ### 2.1 用户痛点
 - **信息碎片化**：兴趣爱好者分散在微信群、小红书、豆瓣等平台，内容难以沉淀与检索；
