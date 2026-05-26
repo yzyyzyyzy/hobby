@@ -10,6 +10,7 @@ import { ResourcesModule } from '@/modules/resources/resources.module';
 import { MessagesModule } from '@/modules/messages/messages.module';
 import { ReportsModule } from '@/modules/reports/reports.module';
 import { AdminModule } from '@/modules/admin/admin.module';
+import { CustomerServiceModule } from '@/modules/customer-service/customer-service.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AdminModule } from '@/modules/admin/admin.module';
     MessagesModule,
     ReportsModule,
     AdminModule,
+    CustomerServiceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

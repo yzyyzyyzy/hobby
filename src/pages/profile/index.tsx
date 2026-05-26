@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { ContactButton } from '@/components/business/contact-button'
 import { useUserStore } from '@/store/user-store'
 import { Network } from '@/network'
 import Taro from '@tarojs/taro'
 import { useState, useEffect } from 'react'
-import { Settings, ChevronRight, BookOpen, Users, FileText, ShieldCheck } from 'lucide-react-taro'
+import { Settings, ChevronRight, BookOpen, Users, FileText, ShieldCheck, Headset } from 'lucide-react-taro'
 
 interface CircleItem {
   id: string
@@ -95,6 +96,14 @@ export default function Profile() {
         </Button>
         <View className="mt-4" onClick={handleAdminLogin}>
           <Text className="block text-sm text-orange-500 underline">管理员登录</Text>
+        </View>
+        {/* 未登录状态联系客服 */}
+        <View className="mt-6">
+          <ContactButton
+            label="联系客服"
+            sessionFrom="profile_unlogged"
+            icon={<Headset size={16} color="#737373" />}
+          />
         </View>
       </View>
     )
@@ -243,6 +252,20 @@ export default function Profile() {
                 <Text className="block text-sm text-neutral-700">编辑资料</Text>
               </View>
               <ChevronRight size={16} color="#737373" />
+            </View>
+            <Separator />
+            {/* 联系客服 */}
+            <View className="flex flex-row items-center justify-between py-3">
+              <View className="flex flex-row items-center gap-3">
+                <Headset size={16} color="#737373" />
+                <Text className="block text-sm text-neutral-700">联系客服</Text>
+              </View>
+              <ContactButton
+                label="在线咨询"
+                sessionFrom="profile"
+                showArrow
+                className="text-xs text-neutral-400"
+              />
             </View>
             <Separator />
             <View className="flex flex-row items-center justify-between py-3" onClick={handleLogout}>
