@@ -16,6 +16,7 @@
 ## 2. 产品背景与目标
 ![架构图1](docs/images/myhobby2.png)
 
+-----------------------------------------
 
 ![架构图2](docs/images/myhobby.png)
 
