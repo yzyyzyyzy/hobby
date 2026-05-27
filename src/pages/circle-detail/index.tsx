@@ -57,7 +57,7 @@ export default function CircleDetail() {
         setCircle(res.data.data)
         setIsMember(res.data.data.is_member || false)
       }
-      const resRes = await Network.request({ url: `/api/resources`, data: { circle_id: id } })
+      const resRes = await Network.request({ url: `/api/resources/circle/${id}` })
       if (resRes.data?.data) setResources(resRes.data.data)
       loadPosts(id)
       loadActivities(id)
@@ -66,14 +66,14 @@ export default function CircleDetail() {
 
   const loadPosts = async (circleId: string) => {
     try {
-      const res = await Network.request({ url: `/api/posts`, data: { circle_id: circleId, sort: 'latest', limit: 20 } })
+      const res = await Network.request({ url: `/api/posts?circle_id=${circleId}&sort=latest` })
       if (res.data?.data) setPosts(res.data.data)
     } catch (err) { console.error('Load posts failed:', err) }
   }
 
   const loadActivities = async (circleId: string) => {
     try {
-      const res = await Network.request({ url: `/api/activities`, data: { circle_id: circleId } })
+      const res = await Network.request({ url: `/api/activities?circle_id=${circleId}` })
       if (res.data?.data) setActivities(res.data.data)
     } catch (err) { console.error('Load activities failed:', err) }
   }

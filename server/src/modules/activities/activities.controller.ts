@@ -5,6 +5,13 @@ import { ActivitiesService } from './activities.service'
 export class ActivitiesController {
   constructor(private readonly activitiesService: ActivitiesService) {}
 
+  @Get()
+  async listActivities(@Query('circle_id') circleId: string) {
+    console.log('[Activities] GET /api/activities', { circleId })
+    const result = await this.activitiesService.listActivities(circleId)
+    return { code: 200, msg: 'success', data: result }
+  }
+
   @Get(':id')
   async getActivity(@Param('id') id: string, @Query('user_id') userId?: string) {
     console.log('[Activities] GET /api/activities/:id', id)

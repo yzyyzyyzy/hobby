@@ -43,4 +43,20 @@ export class CirclesController {
     const result = await this.circlesService.leaveCircle(body)
     return { code: 200, msg: 'success', data: result }
   }
+
+  @Post('apply')
+  async applyToCreateCircle(
+    @Body() body: { applicant_id: string; name: string; description?: string; category: string; tags?: string[] },
+  ) {
+    console.log('[Circles] POST /api/circles/apply', JSON.stringify(body))
+    const result = await this.circlesService.applyToCreateCircle(body)
+    return { code: 200, msg: 'success', data: result }
+  }
+
+  @Get('applications')
+  async getMyApplications(@Query('user_id') userId: string) {
+    console.log('[Circles] GET /api/circles/applications', userId)
+    const result = await this.circlesService.getMyApplications(userId)
+    return { code: 200, msg: 'success', data: result }
+  }
 }

@@ -76,7 +76,7 @@ export class CirclesService {
       .eq('circle_id', body.circle_id)
       .eq('user_id', body.user_id)
       .maybeSingle()
-    if (existing) throw new Error('已加入该圈子')
+    if (existing) return { message: '已加入该圈子', already_joined: true }
 
     const { data, error } = await client
       .from('circle_members')
@@ -102,5 +102,51 @@ export class CirclesService {
     // Update member count
     await client.rpc('increment_member_count', { circle_id_input: body.circle_id, count_input: -1 })
     return { success: true }
+  }
+
+  async applyToCreateCircle(body: { applicant_id: string; name: string; description?: string; category: string; tags?: string[] }) {
+    const client = getSupabaseClient()
+    // Check if circle name already exists
+    const { data: existing } = await client
+      .from('circles')
+      .select('id')
+      .eq('name', body.name)
+      .maybeSingle()
+    if (existing) throw new Error('该圈子名称已存在')
+
+    // Check if user has pending application
+    const { data: pendingApp } = await client
+      .from('circle_applications')
+      .select('id')
+      .eq('applicant_id', body.applicant_id)
+      .eq('status', 'pending')
+      .maybeSingle()
+    if (pendingApp) throw new Error('您有待审批的申请，请耐心等待')
+
+    const { data, error } = await client
+      .from('circle_applications')
+      .insert({
+        applicant_id: body.applicant_id,
+        name: body.name,
+        description: body.description,
+        category: body.category,
+        tags: body.tags || [],
+        status: 'pending',
+      })
+      .select()
+      .maybeSingle()
+    if (error) throw new Error(`Apply to create circle failed: ${error.message}`)
+    return data
+  }
+
+  async getMyApplications(userId: string) {
+    const client = getSupabaseClient()
+    const { data, error } = await client
+      .from('circle_applications')
+      .select('*')
+      .eq('applicant_id', userId)
+      .order('created_at', { ascending: false })
+    if (error) throw new Error(`Get applications failed: ${error.message}`)
+    return data
   }
 }

@@ -237,12 +237,13 @@ export class AdminService {
   // ===== Stats =====
   async getStats() {
     const client = getSupabaseClient()
-    const [circles, users, posts, reports, resources] = await Promise.all([
+    const [circles, users, posts, reports, resources, applications] = await Promise.all([
       client.from('circles').select('id', { count: 'exact', head: true }),
       client.from('users').select('id', { count: 'exact', head: true }),
       client.from('posts').select('id', { count: 'exact', head: true }),
       client.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       client.from('resources').select('id', { count: 'exact', head: true }),
+      client.from('circle_applications').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     ])
     return {
       circle_count: circles.count || 0,
@@ -250,6 +251,115 @@ export class AdminService {
       post_count: posts.count || 0,
       pending_report_count: reports.count || 0,
       resource_count: resources.count || 0,
+      pending_application_count: applications.count || 0,
+    }
+  }
+
+  // ===== Circle Applications =====
+  async listCircleApplications(status?: string) {
+    const client = getSupabaseClient()
+    let query = client
+      .from('circle_applications')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (status) query = query.eq('status', status)
+    const { data, error } = await query
+    if (error) throw new Error(`List circle applications failed: ${error.message}`)
+
+    // Fetch applicant info separately
+    if (data && data.length > 0) {
+      const applicantIds = [...new Set(data.map(d => d.applicant_id))]
+      const { data: users } = await client
+        .from('users')
+        .select('id, nickname, avatar_url')
+        .in('id', applicantIds)
+      const userMap = (users || []).reduce((acc, u) => { acc[u.id] = u; return acc }, {})
+      data.forEach(d => { d.applicant = userMap[d.applicant_id] || { nickname: '未知用户', avatar_url: '' } })
+    }
+
+    return data
+  }
+
+  async handleCircleApplication(id: string, body: { status: 'approved' | 'rejected'; reject_reason?: string; admin_id: string }) {
+    const client = getSupabaseClient()
+
+    if (body.status === 'approved') {
+      // 1. 获取申请详情
+      const { data: app, error: appError } = await client
+        .from('circle_applications')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle()
+      if (appError || !app) throw new Error('申请不存在')
+
+      // 2. 创建圈子，owner_id 为申请人
+      const { data: circle, error: circleError } = await client
+        .from('circles')
+        .insert({
+          name: app.name,
+          description: app.description,
+          category: app.category,
+          tags: app.tags,
+          owner_id: app.applicant_id,
+          member_count: 1,
+          activity_score: 0,
+        })
+        .select()
+        .maybeSingle()
+      if (circleError) throw new Error(`Create circle failed: ${circleError.message}`)
+
+      // 3. 将申请人加入圈子（角色为主理人）
+      await client
+        .from('circle_members')
+        .insert({ circle_id: circle.id, user_id: app.applicant_id, role: 'owner' })
+
+      // 4. 更新申请状态
+      await client
+        .from('circle_applications')
+        .update({ status: 'approved', reviewed_by: body.admin_id, reviewed_at: new Date().toISOString() })
+        .eq('id', id)
+
+      // 5. 通知申请人
+      await client
+        .from('messages')
+        .insert({
+          user_id: app.applicant_id,
+          type: 'system',
+          title: '圈子创建审批通过',
+          content: `您申请创建的圈子「${app.name}」已通过审批，您已成为该圈子的主理人。`,
+          related_id: circle.id,
+        })
+
+      return { circle_id: circle.id, message: '审批通过，圈子已创建' }
+    } else {
+      // 驳回
+      if (!body.reject_reason) throw new Error('驳回时必须填写原因')
+
+      // 获取申请详情
+      const { data: app } = await client
+        .from('circle_applications')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle()
+
+      await client
+        .from('circle_applications')
+        .update({ status: 'rejected', reject_reason: body.reject_reason, reviewed_by: body.admin_id, reviewed_at: new Date().toISOString() })
+        .eq('id', id)
+
+      // 通知申请人
+      if (app) {
+        await client
+          .from('messages')
+          .insert({
+            user_id: app.applicant_id,
+            type: 'system',
+            title: '圈子创建申请被驳回',
+            content: `您申请创建的圈子「${app.name}」被驳回，原因：${body.reject_reason}`,
+          })
+      }
+
+      return { message: '已驳回申请' }
     }
   }
 }

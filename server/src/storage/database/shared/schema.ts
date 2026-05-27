@@ -240,3 +240,20 @@ export const drafts = pgTable("drafts", {
 }, (table) => [
   index("drafts_user_id_idx").on(table.user_id),
 ]);
+
+// ===== Circle Applications (圈子创建申请) =====
+export const circleApplications = pgTable("circle_applications", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  applicant_id: varchar("applicant_id", { length: 36 }).notNull().references(() => users.id),
+  name: varchar("name", { length: 50 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 20 }).notNull(),
+  tags: jsonb("tags").default(sql`'[]'`),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  reject_reason: text("reject_reason"),
+  reviewed_by: varchar("reviewed_by", { length: 36 }).references(() => users.id),
+  reviewed_at: timestamp("reviewed_at", { withTimezone: true }),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("circle_applications_status_idx").on(table.status),
+]);

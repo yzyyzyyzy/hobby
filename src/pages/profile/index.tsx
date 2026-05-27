@@ -55,8 +55,8 @@ export default function Profile() {
     if (!userInfo?.id) return
     try {
       const [circlesRes, postsRes] = await Promise.all([
-        Network.request({ url: '/api/users/circles', method: 'GET' }),
-        Network.request({ url: '/api/users/posts', method: 'GET' }),
+        Network.request({ url: `/api/users/circles?user_id=${userInfo.id}`, method: 'GET' }),
+        Network.request({ url: `/api/users/posts?user_id=${userInfo.id}`, method: 'GET' }),
       ])
       console.log('User circles:', circlesRes.data)
       console.log('User posts:', postsRes.data)

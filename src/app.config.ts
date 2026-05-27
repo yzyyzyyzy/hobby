@@ -14,6 +14,7 @@ export default defineAppConfig({
     'pages/edit-profile/index',
     'pages/resource-detail/index',
     'pages/search/index',
+    'pages/create-circle/index',
     'pages/index/index'
   ],
   window: {

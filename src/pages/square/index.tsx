@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Network } from '@/network'
 import Taro from '@tarojs/taro'
-import { useState, useEffect } from 'react'
-import { Search, Users, Flame } from 'lucide-react-taro'
+import { useState, useEffect, useCallback } from 'react'
+import { Search, Users, Flame, CirclePlus } from 'lucide-react-taro'
+import { useUserStore } from '@/store/user-store'
 
 interface CircleItem {
   id: string
@@ -31,20 +32,20 @@ const CATEGORIES = [
 
 export default function Square() {
   const [circles, setCircles] = useState<CircleItem[]>([])
+  const [myCircles, setMyCircles] = useState<CircleItem[]>([])
   const [category, setCategory] = useState('all')
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState('all')
+  const { userInfo } = useUserStore()
 
-  useEffect(() => {
-    loadCircles()
-  }, [category])
-
-  const loadCircles = async () => {
+  const loadCircles = useCallback(async () => {
     setLoading(true)
     try {
       const params: Record<string, string> = {}
       if (category !== 'all') params.category = category
       if (keyword) params.keyword = keyword
+      if (userInfo?.id) params.user_id = userInfo.id
 
       const query = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
       const res = await Network.request({
@@ -54,28 +55,38 @@ export default function Square() {
       console.log('Load circles response:', res.data)
       if (res.data?.data) {
         setCircles(res.data.data)
+        setMyCircles(res.data.data.filter((c: CircleItem) => c.is_joined))
       }
     } catch (err) {
       console.error('Load circles failed:', err)
     } finally {
       setLoading(false)
     }
-  }
+  }, [category, keyword, userInfo?.id])
+
+  useEffect(() => {
+    loadCircles()
+  }, [loadCircles])
 
   const handleSearch = () => {
     Taro.navigateTo({ url: `/pages/search/index?keyword=${keyword}` })
   }
 
   const handleJoinCircle = async (circleId: string, isJoined: boolean) => {
+    if (!userInfo?.id) {
+      Taro.showToast({ title: '请先登录', icon: 'none' })
+      Taro.navigateTo({ url: '/pages/login/index' })
+      return
+    }
     try {
       const url = isJoined ? '/api/circles/leave' : '/api/circles/join'
       const res = await Network.request({
         url,
         method: 'POST',
-        data: { circle_id: circleId },
+        data: { circle_id: circleId, user_id: userInfo.id },
       })
       console.log('Join/leave response:', res.data)
-      if (res.data?.data) {
+      if (res.data?.code === 200 || res.data?.data) {
         setCircles((prev) =>
           prev.map((c) =>
             c.id === circleId
@@ -87,16 +98,36 @@ export default function Square() {
               : c
           )
         )
+        setMyCircles((prev) =>
+          isJoined
+            ? prev.filter((c) => c.id !== circleId)
+            : [...prev, circles.find((c) => c.id === circleId)!].map((c) =>
+                c.id === circleId ? { ...c, is_joined: true, member_count: c.member_count + 1 } : c
+              )
+        )
         Taro.showToast({
           title: isJoined ? '已退出圈子' : '已加入圈子',
           icon: 'success',
         })
+      } else {
+        Taro.showToast({ title: res.data?.msg || '操作失败', icon: 'none' })
       }
     } catch (err) {
       console.error('Join/leave circle failed:', err)
       Taro.showToast({ title: '操作失败', icon: 'none' })
     }
   }
+
+  const handleCreateCircle = () => {
+    if (!userInfo?.id) {
+      Taro.showToast({ title: '请先登录', icon: 'none' })
+      Taro.navigateTo({ url: '/pages/login/index' })
+      return
+    }
+    Taro.navigateTo({ url: '/pages/create-circle/index' })
+  }
+
+  const displayCircles = activeTab === 'my' ? myCircles : circles
 
   return (
     <View className="h-full bg-neutral-50">
@@ -127,6 +158,28 @@ export default function Square() {
         </Tabs>
       </View>
 
+      {/* 全部/我的 Tab */}
+      <View className="bg-white px-4 pb-2 flex flex-row items-center justify-between">
+        <View className="flex flex-row gap-4">
+          <Text
+            className={`block text-sm font-medium ${activeTab === 'all' ? 'text-orange-500' : 'text-neutral-500'}`}
+            onClick={() => setActiveTab('all')}
+          >
+            全部
+          </Text>
+          <Text
+            className={`block text-sm font-medium ${activeTab === 'my' ? 'text-orange-500' : 'text-neutral-500'}`}
+            onClick={() => setActiveTab('my')}
+          >
+            我的{myCircles.length > 0 ? `(${myCircles.length})` : ''}
+          </Text>
+        </View>
+        <View onClick={handleCreateCircle} className="flex flex-row items-center gap-1">
+          <CirclePlus size={16} color="#F97316" />
+          <Text className="block text-sm text-orange-500">创建圈子</Text>
+        </View>
+      </View>
+
       <View className="h-2" />
 
       {/* 圈子列表 */}
@@ -135,8 +188,8 @@ export default function Square() {
           <View className="flex items-center justify-center py-12">
             <Text className="block text-sm text-neutral-400">加载中...</Text>
           </View>
-        ) : circles.length > 0 ? (
-          circles.map((circle) => (
+        ) : displayCircles.length > 0 ? (
+          displayCircles.map((circle) => (
             <Card key={circle.id} className="overflow-hidden">
               <CardContent className="p-4">
                 <View
@@ -183,18 +236,12 @@ export default function Square() {
             </Card>
           ))
         ) : (
-          <View className="flex flex-col items-center justify-center py-12">
-            <Text className="block text-4xl mb-3">🎯</Text>
-            <Text className="block text-sm text-neutral-500">暂无圈子，快来创建一个吧</Text>
+          <View className="flex items-center justify-center py-12">
+            <Text className="block text-sm text-neutral-400">
+              {activeTab === 'my' ? '还没有加入圈子，去全部看看吧' : '暂无圈子'}
+            </Text>
           </View>
         )}
-      </View>
-
-      {/* 底部免责声明 */}
-      <View className="px-4 py-3">
-        <Text className="block text-xs text-neutral-400 text-center">
-          内容由用户生成，平台不承担相关责任 |《用户协议》《隐私政策》
-        </Text>
       </View>
     </View>
   )

@@ -132,6 +132,28 @@ export class AdminController {
     return { code: 200, msg: 'success', data: result }
   }
 
+  // ===== Circle Application Management =====
+  @Get('applications')
+  async listApplications(@Query('status') status?: string) {
+    console.log('[Admin] GET /api/admin/applications', status)
+    const result = await this.adminService.listCircleApplications(status)
+    return { code: 200, msg: 'success', data: result }
+  }
+
+  @Put('applications/:id/approve')
+  async approveApplication(@Param('id') id: string, @Body() body: { admin_id: string }) {
+    console.log('[Admin] PUT /api/admin/applications/:id/approve', id)
+    const result = await this.adminService.handleCircleApplication(id, { status: 'approved', admin_id: body.admin_id })
+    return { code: 200, msg: 'success', data: result }
+  }
+
+  @Put('applications/:id/reject')
+  async rejectApplication(@Param('id') id: string, @Body() body: { admin_id: string; reject_reason: string }) {
+    console.log('[Admin] PUT /api/admin/applications/:id/reject', id, body.reject_reason)
+    const result = await this.adminService.handleCircleApplication(id, { status: 'rejected', reject_reason: body.reject_reason, admin_id: body.admin_id })
+    return { code: 200, msg: 'success', data: result }
+  }
+
   // ===== Post Management =====
   @Delete('posts/:id')
   async deletePost(@Param('id') id: string) {
@@ -152,6 +174,24 @@ export class AdminController {
   async updateUserRole(@Param('id') id: string, @Body() body: { role: string }) {
     console.log('[Admin] PUT /api/admin/users/:id/role', id, body.role)
     const result = await this.adminService.updateUserRole(id, body.role)
+    return { code: 200, msg: 'success', data: result }
+  }
+
+  // ===== Circle Application Management =====
+  @Get('circle-applications')
+  async listCircleApplications(@Query('status') status?: string) {
+    console.log('[Admin] GET /api/admin/circle-applications', status)
+    const result = await this.adminService.listCircleApplications(status)
+    return { code: 200, msg: 'success', data: result }
+  }
+
+  @Put('circle-applications/:id')
+  async handleCircleApplication(
+    @Param('id') id: string,
+    @Body() body: { status: 'approved' | 'rejected'; reject_reason?: string; admin_id: string },
+  ) {
+    console.log('[Admin] PUT /api/admin/circle-applications/:id', id, body.status)
+    const result = await this.adminService.handleCircleApplication(id, body)
     return { code: 200, msg: 'success', data: result }
   }
 

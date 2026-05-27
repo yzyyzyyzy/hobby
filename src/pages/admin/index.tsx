@@ -34,7 +34,7 @@ interface KeywordItem {
 
 interface Stats {
   circle_count: number; user_count: number; post_count: number;
-  pending_report_count: number; resource_count: number;
+  pending_report_count: number; resource_count: number; pending_application_count: number;
 }
 
 const TEMPLATE_TYPES: Record<string, { label: string; icon: string }> = {
