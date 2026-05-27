@@ -92,7 +92,7 @@ export default function AdminLogin() {
 
       <View className="mt-8 px-4">
         <Text className="block text-xs text-neutral-400 text-center">
-          仅限管理员访问 · 账号: admin / 密码: hobby2025
+          仅限管理员访问 · 请输入管理员账号和密码
         </Text>
       </View>
     </View>

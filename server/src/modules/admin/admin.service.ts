@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
 
-const ADMIN_USERNAME = 'admin'
-const ADMIN_PASSWORD = 'hobby2025'
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || ''
 
 @Injectable()
 export class AdminService {
   // ===== Auth =====
   async adminLogin(body: { username: string; password: string }) {
+    if (!ADMIN_PASSWORD) {
+      throw new Error('管理员密码未配置，请设置环境变量 ADMIN_PASSWORD')
+    }
     if (body.username !== ADMIN_USERNAME || body.password !== ADMIN_PASSWORD) {
       throw new Error('管理员账号或密码错误')
     }
