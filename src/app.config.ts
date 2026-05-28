@@ -15,6 +15,9 @@ export default defineAppConfig({
     'pages/resource-detail/index',
     'pages/search/index',
     'pages/create-circle/index',
+    'pages/publish-post/index',
+    'pages/publish-activity/index',
+    'pages/submit-resource/index',
     'pages/index/index'
   ],
   window: {

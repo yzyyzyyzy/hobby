@@ -9,7 +9,7 @@ import Taro from '@tarojs/taro'
 import { useState, useEffect } from 'react'
 import {
   Shield, LayoutGrid, BookOpen, TriangleAlert, Ban,
-  Trash2, Pencil, Users
+  Trash2, Pencil, Users, ClipboardCheck
 } from 'lucide-react-taro'
 
 interface CircleItem {
@@ -32,6 +32,12 @@ interface KeywordItem {
   id: string; keyword: string; category: string;
 }
 
+interface ApplicationItem {
+  id: string; applicant_id: string; name: string; description: string;
+  category: string; tags: string[]; status: string; reject_reason: string;
+  applicant?: { nickname: string; avatar_url: string }; created_at: string;
+}
+
 interface Stats {
   circle_count: number; user_count: number; post_count: number;
   pending_report_count: number; resource_count: number; pending_application_count: number;
@@ -51,11 +57,14 @@ export default function AdminPage() {
   const [resources, setResources] = useState<ResourceItem[]>([])
   const [reports, setReports] = useState<ReportItem[]>([])
   const [keywords, setKeywords] = useState<KeywordItem[]>([])
+  const [applications, setApplications] = useState<ApplicationItem[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [selectedCircleId, setSelectedCircleId] = useState('')
   const [showCreateCircle, setShowCreateCircle] = useState(false)
   const [showCreateResource, setShowCreateResource] = useState(false)
   const [newKeyword, setNewKeyword] = useState('')
+  const [rejectingId, setRejectingId] = useState('')
+  const [rejectReason, setRejectReason] = useState('')
 
   // Create circle form
   const [circleName, setCircleName] = useState('')
@@ -70,12 +79,12 @@ export default function AdminPage() {
   useEffect(() => {
     loadStats()
     loadCircles()
-    loadKeywords()
   }, [])
 
   useEffect(() => {
     if (activeTab === 'reports') loadReports()
     if (activeTab === 'keywords') loadKeywords()
+    if (activeTab === 'applications') loadApplications()
   }, [activeTab])
 
   useEffect(() => {
@@ -85,6 +94,7 @@ export default function AdminPage() {
   const loadStats = async () => {
     try {
       const res = await Network.request({ url: '/api/admin/stats' })
+      console.log('Stats response:', res.data)
       if (res.data?.data) setStats(res.data.data)
     } catch (err) { console.error('Load stats failed:', err) }
   }
@@ -92,6 +102,7 @@ export default function AdminPage() {
   const loadCircles = async () => {
     try {
       const res = await Network.request({ url: '/api/admin/circles' })
+      console.log('Circles response:', res.data)
       if (res.data?.data) {
         setCircles(res.data.data)
         if (res.data.data.length > 0 && !selectedCircleId) {
@@ -104,13 +115,14 @@ export default function AdminPage() {
   const loadResources = async (circleId: string) => {
     try {
       const res = await Network.request({ url: `/api/admin/resources?circle_id=${circleId}` })
+      console.log('Resources response:', res.data)
       if (res.data?.data) setResources(res.data.data)
     } catch (err) { console.error('Load resources failed:', err) }
   }
 
   const loadReports = async () => {
     try {
-      const res = await Network.request({ url: '/api/admin/reports' })
+      const res = await Network.request({ url: '/api/admin/reports?status=pending' })
       if (res.data?.data) setReports(res.data.data)
     } catch (err) { console.error('Load reports failed:', err) }
   }
@@ -122,93 +134,87 @@ export default function AdminPage() {
     } catch (err) { console.error('Load keywords failed:', err) }
   }
 
+  const loadApplications = async () => {
+    try {
+      const res = await Network.request({ url: '/api/admin/circle-applications' })
+      console.log('Applications response:', res.data)
+      if (res.data?.data) setApplications(res.data.data)
+    } catch (err) { console.error('Load applications failed:', err) }
+  }
+
   const handleCreateCircle = async () => {
-    if (!circleName.trim()) { Taro.showToast({ title: '请输入圈子名称', icon: 'none' }); return }
+    if (!circleName.trim()) return Taro.showToast({ title: '请输入圈子名称', icon: 'none' })
     try {
       const res = await Network.request({
         url: '/api/admin/circles',
         method: 'POST',
-        data: { name: circleName, category: circleCategory, description: circleDesc, tags: [] },
+        data: { name: circleName, category: circleCategory, description: circleDesc, tags: [] }
       })
       if (res.data?.data) {
         Taro.showToast({ title: '创建成功', icon: 'success' })
         setShowCreateCircle(false)
-        setCircleName(''); setCircleDesc('')
-        loadCircles(); loadStats()
+        setCircleName('')
+        setCircleDesc('')
+        loadCircles()
+        loadStats()
       }
     } catch (err) { console.error('Create circle failed:', err) }
   }
 
   const handleDeleteCircle = async (id: string) => {
-    const { confirm } = await Taro.showModal({ title: '确认删除', content: '删除后不可恢复，确定吗？' })
+    const { confirm } = await Taro.showModal({ title: '确认删除', content: '删除后不可恢复' })
     if (!confirm) return
     try {
       await Network.request({ url: `/api/admin/circles/${id}`, method: 'DELETE' })
       Taro.showToast({ title: '已删除', icon: 'success' })
-      loadCircles(); loadStats()
+      loadCircles()
+      loadStats()
     } catch (err) { console.error('Delete circle failed:', err) }
   }
 
   const handleCreateResource = async () => {
-    if (!resTitle.trim() || !selectedCircleId) { Taro.showToast({ title: '请完善信息', icon: 'none' }); return }
+    if (!resTitle.trim() || !selectedCircleId) return Taro.showToast({ title: '请填写完整', icon: 'none' })
     try {
-      const defaultData: Record<string, any> = {
-        ranking: { items: [] },
-        gallery: { items: [] },
-        list: { items: [] },
-      }
       const res = await Network.request({
         url: '/api/admin/resources',
         method: 'POST',
         data: {
-          circle_id: selectedCircleId,
-          title: resTitle,
-          template_type: resType,
-          description: resDesc,
-          template_data: defaultData[resType] || { items: [] },
-          sort_order: resources.length,
-        },
+          circle_id: selectedCircleId, title: resTitle,
+          template_type: resType, description: resDesc,
+          template_data: { items: [] }, sort_order: 0
+        }
       })
       if (res.data?.data) {
         Taro.showToast({ title: '创建成功', icon: 'success' })
         setShowCreateResource(false)
         setResTitle(''); setResDesc('')
-        loadResources(selectedCircleId); loadStats()
+        loadResources(selectedCircleId)
+        loadStats()
       }
     } catch (err) { console.error('Create resource failed:', err) }
   }
 
   const handleDeleteResource = async (id: string) => {
-    const { confirm } = await Taro.showModal({ title: '确认删除', content: '删除后不可恢复' })
-    if (!confirm) return
     try {
       await Network.request({ url: `/api/admin/resources/${id}`, method: 'DELETE' })
       Taro.showToast({ title: '已删除', icon: 'success' })
-      loadResources(selectedCircleId); loadStats()
+      if (selectedCircleId) loadResources(selectedCircleId)
     } catch (err) { console.error('Delete resource failed:', err) }
   }
 
   const handleReport = async (id: string, status: string) => {
     try {
-      await Network.request({
-        url: `/api/admin/reports/${id}`,
-        method: 'PUT',
-        data: { status },
-      })
+      await Network.request({ url: `/api/admin/reports/${id}`, method: 'PUT', data: { status } })
       Taro.showToast({ title: '已处理', icon: 'success' })
-      loadReports(); loadStats()
+      loadReports()
+      loadStats()
     } catch (err) { console.error('Handle report failed:', err) }
   }
 
   const handleAddKeyword = async () => {
     if (!newKeyword.trim()) return
     try {
-      await Network.request({
-        url: '/api/admin/keywords',
-        method: 'POST',
-        data: { keyword: newKeyword.trim() },
-      })
-      Taro.showToast({ title: '已添加', icon: 'success' })
+      await Network.request({ url: '/api/admin/keywords', method: 'POST', data: { keyword: newKeyword } })
       setNewKeyword('')
       loadKeywords()
     } catch (err) { console.error('Add keyword failed:', err) }
@@ -217,88 +223,94 @@ export default function AdminPage() {
   const handleDeleteKeyword = async (id: string) => {
     try {
       await Network.request({ url: `/api/admin/keywords/${id}`, method: 'DELETE' })
-      Taro.showToast({ title: '已删除', icon: 'success' })
       loadKeywords()
     } catch (err) { console.error('Delete keyword failed:', err) }
   }
 
+  const handleApproveApplication = async (id: string) => {
+    try {
+      const adminInfo = Taro.getStorageSync('adminInfo')
+      const adminId = adminInfo ? JSON.parse(adminInfo).id : ''
+      const res = await Network.request({
+        url: `/api/admin/applications/${id}/approve`,
+        method: 'PUT',
+        data: { admin_id: adminId }
+      })
+      console.log('Approve response:', res.data)
+      Taro.showToast({ title: '审批通过', icon: 'success' })
+      loadApplications()
+      loadCircles()
+      loadStats()
+    } catch (err) {
+      console.error('Approve failed:', err)
+      Taro.showToast({ title: '审批失败', icon: 'none' })
+    }
+  }
+
+  const handleRejectApplication = async (id: string) => {
+    if (!rejectReason.trim()) return Taro.showToast({ title: '请填写驳回原因', icon: 'none' })
+    try {
+      const adminInfo = Taro.getStorageSync('adminInfo')
+      const adminId = adminInfo ? JSON.parse(adminInfo).id : ''
+      const res = await Network.request({
+        url: `/api/admin/applications/${id}/reject`,
+        method: 'PUT',
+        data: { admin_id: adminId, reject_reason: rejectReason }
+      })
+      console.log('Reject response:', res.data)
+      Taro.showToast({ title: '已驳回', icon: 'success' })
+      setRejectingId('')
+      setRejectReason('')
+      loadApplications()
+      loadStats()
+    } catch (err) {
+      console.error('Reject failed:', err)
+      Taro.showToast({ title: '操作失败', icon: 'none' })
+    }
+  }
+
+  const pendingApps = applications.filter(a => a.status === 'pending')
+  const processedApps = applications.filter(a => a.status !== 'pending')
+
   return (
-    <View className="min-h-full bg-neutral-50">
-      {/* Header */}
-      <View className="bg-white px-4 py-3 border-b border-neutral-100">
+    <View className="min-h-screen bg-neutral-50">
+      <View className="bg-white px-4 pt-12 pb-3 border-b border-neutral-100">
         <View className="flex flex-row items-center gap-2">
           <Shield size={20} color="#F97316" />
-          <Text className="block text-lg font-bold text-neutral-900">Hobby 管理后台</Text>
+          <Text className="block text-lg font-bold text-neutral-900">管理后台</Text>
         </View>
       </View>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as string)}>
-        <TabsList className="w-full">
-          <TabsTrigger value="dashboard" className="flex-1">
-            <View className="flex flex-row items-center gap-1">
-              <LayoutGrid size={12} color={activeTab === 'dashboard' ? '#F97316' : '#737373'} />
-              <Text className="text-xs">概览</Text>
-            </View>
-          </TabsTrigger>
-          <TabsTrigger value="circles" className="flex-1">
-            <View className="flex flex-row items-center gap-1">
-              <Users size={12} color={activeTab === 'circles' ? '#F97316' : '#737373'} />
-              <Text className="text-xs">圈子</Text>
-            </View>
-          </TabsTrigger>
-          <TabsTrigger value="resources" className="flex-1">
-            <View className="flex flex-row items-center gap-1">
-              <BookOpen size={12} color={activeTab === 'resources' ? '#F97316' : '#737373'} />
-              <Text className="text-xs">资料库</Text>
-            </View>
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="flex-1">
-            <View className="flex flex-row items-center gap-1">
-              <TriangleAlert size={12} color={activeTab === 'reports' ? '#F97316' : '#737373'} />
-              <Text className="text-xs">举报</Text>
-            </View>
-          </TabsTrigger>
-          <TabsTrigger value="keywords" className="flex-1">
-            <View className="flex flex-row items-center gap-1">
-              <Ban size={12} color={activeTab === 'keywords' ? '#F97316' : '#737373'} />
-              <Text className="text-xs">词库</Text>
-            </View>
-          </TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="px-4">
+          <TabsTrigger value="dashboard"><LayoutGrid size={14} color="#666" /> 概览</TabsTrigger>
+          <TabsTrigger value="circles"><Users size={14} color="#666" /> 圈子</TabsTrigger>
+          <TabsTrigger value="applications"><ClipboardCheck size={14} color="#666" /> 审批{pendingApps.length > 0 && <Badge className="ml-1 bg-red-500 text-white text-xs">{pendingApps.length}</Badge>}</TabsTrigger>
+          <TabsTrigger value="resources"><BookOpen size={14} color="#666" /> 资料</TabsTrigger>
+          <TabsTrigger value="reports"><TriangleAlert size={14} color="#666" /> 举报</TabsTrigger>
+          <TabsTrigger value="keywords"><Ban size={14} color="#666" /> 关键词</TabsTrigger>
         </TabsList>
 
         {/* Dashboard */}
         <TabsContent value="dashboard">
-          <View className="px-4 py-4 space-y-4">
-            {stats && (
-              <>
-                <View className="grid grid-cols-2 gap-3">
-                  <Card><CardContent className="p-4 text-center">
-                    <Text className="block text-2xl font-bold text-orange-500">{stats.circle_count}</Text>
-                    <Text className="block text-xs text-neutral-500 mt-1">圈子</Text>
-                  </CardContent></Card>
-                  <Card><CardContent className="p-4 text-center">
-                    <Text className="block text-2xl font-bold text-blue-500">{stats.user_count}</Text>
-                    <Text className="block text-xs text-neutral-500 mt-1">用户</Text>
-                  </CardContent></Card>
-                  <Card><CardContent className="p-4 text-center">
-                    <Text className="block text-2xl font-bold text-green-500">{stats.post_count}</Text>
-                    <Text className="block text-xs text-neutral-500 mt-1">帖子</Text>
-                  </CardContent></Card>
-                  <Card><CardContent className="p-4 text-center">
-                    <Text className="block text-2xl font-bold text-red-500">{stats.pending_report_count}</Text>
-                    <Text className="block text-xs text-neutral-500 mt-1">待处理举报</Text>
-                  </CardContent></Card>
-                </View>
-                <Card><CardContent className="p-4 text-center">
-                  <Text className="block text-2xl font-bold text-purple-500">{stats.resource_count}</Text>
-                  <Text className="block text-xs text-neutral-500 mt-1">资料模板</Text>
-                </CardContent></Card>
-              </>
-            )}
-            <View className="bg-orange-50 rounded-xl p-4">
-              <Text className="block text-sm font-medium text-orange-700 mb-2">管理员登录信息</Text>
-              <Text className="block text-xs text-orange-600">账号: admin</Text>
-              <Text className="block text-xs text-orange-600">密码: hobby2025</Text>
+          <View className="px-4 py-3">
+            <View className="grid grid-cols-3 gap-2 mb-4">
+              {[
+                { label: '圈子', value: stats?.circle_count || 0, icon: '🏂' },
+                { label: '用户', value: stats?.user_count || 0, icon: '👥' },
+                { label: '帖子', value: stats?.post_count || 0, icon: '📝' },
+                { label: '待审批', value: stats?.pending_application_count || 0, icon: '📋' },
+                { label: '待举报', value: stats?.pending_report_count || 0, icon: '⚠️' },
+                { label: '资料模板', value: stats?.resource_count || 0, icon: '📚' },
+              ].map((s, i) => (
+                <Card key={i}>
+                  <CardContent className="p-3 text-center">
+                    <Text className="block text-xl mb-1">{s.icon}</Text>
+                    <Text className="block text-lg font-bold text-neutral-900">{s.value}</Text>
+                    <Text className="block text-xs text-neutral-400">{s.label}</Text>
+                  </CardContent>
+                </Card>
+              ))}
             </View>
           </View>
         </TabsContent>
@@ -321,16 +333,14 @@ export default function AdminPage() {
                   </View>
                   <View className="flex flex-row flex-wrap gap-2">
                     {CATEGORIES.map((cat) => (
-                      <Badge
-                        key={cat}
-                        variant={circleCategory === cat ? 'default' : 'outline'}
+                      <Badge key={cat} variant={circleCategory === cat ? 'default' : 'outline'}
                         className={circleCategory === cat ? 'bg-orange-500 text-white' : ''}
                         onClick={() => setCircleCategory(cat)}
                       >{cat}</Badge>
                     ))}
                   </View>
                   <View className="bg-neutral-50 rounded-xl px-4 py-3">
-                    <Input placeholder="圈子描述（可选）" value={circleDesc} onInput={(e) => setCircleDesc(e.detail.value)} />
+                    <Input placeholder="圈子描述" value={circleDesc} onInput={(e) => setCircleDesc(e.detail.value)} />
                   </View>
                   <View className="flex flex-row gap-2">
                     <Button size="sm" className="bg-orange-500 text-white flex-1" onClick={handleCreateCircle}>
@@ -370,15 +380,112 @@ export default function AdminPage() {
           </View>
         </TabsContent>
 
+        {/* Circle Applications */}
+        <TabsContent value="applications">
+          <View className="px-4 py-3">
+            <Text className="block text-sm font-semibold text-neutral-900 mb-3">圈子审批</Text>
+
+            {pendingApps.length > 0 && (
+              <View className="mb-4">
+                <Text className="block text-xs text-neutral-500 mb-2">待审批 ({pendingApps.length})</Text>
+                <View className="space-y-2">
+                  {pendingApps.map((app) => (
+                    <Card key={app.id}>
+                      <CardContent className="p-4">
+                        <View className="flex flex-row items-center gap-3 mb-2">
+                          <View className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Text className="block text-lg">{app.category === '运动' ? '🏂' : app.category === '户外' ? '🏕️' : app.category === '文化' ? '📚' : '🏠'}</Text>
+                          </View>
+                          <View className="flex-1">
+                            <Text className="block text-sm font-semibold text-neutral-900">{app.name}</Text>
+                            <View className="flex flex-row items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">{app.category}</Badge>
+                              <Text className="block text-xs text-neutral-400">申请人: {app.applicant?.nickname || '未知'}</Text>
+                            </View>
+                          </View>
+                        </View>
+                        {app.description && (
+                          <Text className="block text-xs text-neutral-500 mb-2">{app.description}</Text>
+                        )}
+                        {app.tags && app.tags.length > 0 && (
+                          <View className="flex flex-row flex-wrap gap-1 mb-3">
+                            {app.tags.map((tag, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">{tag}</Badge>
+                            ))}
+                          </View>
+                        )}
+
+                        {rejectingId === app.id ? (
+                          <View className="space-y-2">
+                            <View className="bg-neutral-50 rounded-xl px-4 py-3">
+                              <Input placeholder="请输入驳回原因" value={rejectReason} onInput={(e) => setRejectReason(e.detail.value)} />
+                            </View>
+                            <View className="flex flex-row gap-2">
+                              <Button size="sm" variant="outline" className="flex-1" onClick={() => { setRejectingId(''); setRejectReason('') }}>
+                                <Text className="text-xs">取消</Text>
+                              </Button>
+                              <Button size="sm" className="bg-red-500 text-white flex-1" onClick={() => handleRejectApplication(app.id)}>
+                                <Text className="text-white text-xs">确认驳回</Text>
+                              </Button>
+                            </View>
+                          </View>
+                        ) : (
+                          <View className="flex flex-row gap-2">
+                            <Button size="sm" className="bg-green-500 text-white flex-1" onClick={() => handleApproveApplication(app.id)}>
+                              <Text className="text-white text-xs">通过</Text>
+                            </Button>
+                            <Button size="sm" variant="outline" className="flex-1" onClick={() => setRejectingId(app.id)}>
+                              <Text className="text-xs">驳回</Text>
+                            </Button>
+                          </View>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {processedApps.length > 0 && (
+              <View>
+                <Text className="block text-xs text-neutral-500 mb-2">已处理</Text>
+                <View className="space-y-2">
+                  {processedApps.map((app) => (
+                    <Card key={app.id}>
+                      <CardContent className="p-4">
+                        <View className="flex flex-row items-center gap-3">
+                          <View className="flex-1">
+                            <Text className="block text-sm text-neutral-700">{app.name}</Text>
+                            <View className="flex flex-row items-center gap-2 mt-1">
+                              <Badge className={app.status === 'approved' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}>
+                                {app.status === 'approved' ? '已通过' : '已驳回'}
+                              </Badge>
+                              {app.reject_reason && <Text className="block text-xs text-neutral-400">原因: {app.reject_reason}</Text>}
+                            </View>
+                          </View>
+                        </View>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {applications.length === 0 && (
+              <View className="flex flex-col items-center py-12">
+                <Text className="block text-3xl mb-2">📋</Text>
+                <Text className="block text-sm text-neutral-400">暂无圈子申请</Text>
+              </View>
+            )}
+          </View>
+        </TabsContent>
+
         {/* Resources Management */}
         <TabsContent value="resources">
           <View className="px-4 py-3">
-            {/* Circle selector */}
             <View className="flex flex-row flex-wrap gap-2 mb-3">
               {circles.map((c) => (
-                <Badge
-                  key={c.id}
-                  variant={selectedCircleId === c.id ? 'default' : 'outline'}
+                <Badge key={c.id} variant={selectedCircleId === c.id ? 'default' : 'outline'}
                   className={selectedCircleId === c.id ? 'bg-orange-500 text-white' : ''}
                   onClick={() => setSelectedCircleId(c.id)}
                 >{c.name}</Badge>
@@ -402,9 +509,7 @@ export default function AdminPage() {
                   </View>
                   <View className="flex flex-row flex-wrap gap-2">
                     {Object.entries(TEMPLATE_TYPES).map(([key, val]) => (
-                      <Badge
-                        key={key}
-                        variant={resType === key ? 'default' : 'outline'}
+                      <Badge key={key} variant={resType === key ? 'default' : 'outline'}
                         className={resType === key ? 'bg-orange-500 text-white' : ''}
                         onClick={() => setResType(key)}
                       >{val.icon} {val.label}</Badge>

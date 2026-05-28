@@ -1,25 +1,25 @@
+import { useState, useCallback, useEffect } from 'react'
 import { View, Text } from '@tarojs/components'
+import Taro from '@tarojs/taro'
+import { Search, Users, Flame, CirclePlus } from 'lucide-react-taro'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Network } from '@/network'
-import Taro from '@tarojs/taro'
-import { useState, useEffect, useCallback } from 'react'
-import { Search, Users, Flame, CirclePlus } from 'lucide-react-taro'
 import { useUserStore } from '@/store/user-store'
 
 interface CircleItem {
   id: string
   name: string
-  category: string
   description: string
-  cover_url: string
+  category: string
+  tags: string[]
   member_count: number
   activity_score: number
-  tags: string[]
   is_joined: boolean
+  owner_id?: string
 }
 
 const CATEGORIES = [
@@ -39,6 +39,7 @@ export default function Square() {
   const [activeTab, setActiveTab] = useState('all')
   const { userInfo } = useUserStore()
 
+  // 加载全部圈子
   const loadCircles = useCallback(async () => {
     setLoading(true)
     try {
@@ -55,22 +56,51 @@ export default function Square() {
       console.log('Load circles response:', res.data)
       if (res.data?.data) {
         setCircles(res.data.data)
-        setMyCircles(res.data.data.filter((c: CircleItem) => c.is_joined))
       }
     } catch (err) {
-      console.error('Load circles failed:', err)
+      console.error('Load circles error:', err)
     } finally {
       setLoading(false)
     }
   }, [category, keyword, userInfo?.id])
 
+  // 独立加载我的圈子
+  const loadMyCircles = useCallback(async () => {
+    if (!userInfo?.id) {
+      setMyCircles([])
+      return
+    }
+    try {
+      const res = await Network.request({
+        url: `/api/users/circles?user_id=${userInfo.id}`,
+        method: 'GET',
+      })
+      console.log('Load my circles response:', res.data)
+      if (res.data?.data) {
+        setMyCircles(res.data.data)
+      }
+    } catch (err) {
+      console.error('Load my circles error:', err)
+    }
+  }, [userInfo?.id])
+
+  // 刷新所有数据
+  const refreshAll = useCallback(async () => {
+    await Promise.all([loadCircles(), loadMyCircles()])
+  }, [loadCircles, loadMyCircles])
+
   useEffect(() => {
     loadCircles()
   }, [loadCircles])
 
-  const handleSearch = () => {
-    Taro.navigateTo({ url: `/pages/search/index?keyword=${keyword}` })
-  }
+  useEffect(() => {
+    loadMyCircles()
+  }, [loadMyCircles])
+
+  // 页面显示时刷新（切回广场Tab时触发）
+  Taro.useDidShow(() => {
+    refreshAll()
+  })
 
   const handleJoinCircle = async (circleId: string, isJoined: boolean) => {
     if (!userInfo?.id) {
@@ -85,37 +115,27 @@ export default function Square() {
         method: 'POST',
         data: { circle_id: circleId, user_id: userInfo.id },
       })
-      console.log('Join/leave response:', res.data)
+      console.log(`${isJoined ? 'Leave' : 'Join'} circle response:`, res.data)
       if (res.data?.code === 200 || res.data?.data) {
-        setCircles((prev) =>
-          prev.map((c) =>
-            c.id === circleId
-              ? {
-                  ...c,
-                  is_joined: !isJoined,
-                  member_count: c.member_count + (isJoined ? -1 : 1),
-                }
-              : c
-          )
-        )
-        setMyCircles((prev) =>
-          isJoined
-            ? prev.filter((c) => c.id !== circleId)
-            : [...prev, circles.find((c) => c.id === circleId)!].map((c) =>
-                c.id === circleId ? { ...c, is_joined: true, member_count: c.member_count + 1 } : c
-              )
-        )
         Taro.showToast({
-          title: isJoined ? '已退出圈子' : '已加入圈子',
+          title: isJoined ? '已退出圈子' : '加入成功',
           icon: 'success',
         })
+        refreshAll()
       } else {
-        Taro.showToast({ title: res.data?.msg || '操作失败', icon: 'none' })
+        Taro.showToast({
+          title: res.data?.msg || (isJoined ? '退出失败' : '加入失败'),
+          icon: 'none',
+        })
       }
     } catch (err) {
-      console.error('Join/leave circle failed:', err)
+      console.error('Join/Leave circle error:', err)
       Taro.showToast({ title: '操作失败', icon: 'none' })
     }
+  }
+
+  const handleSearch = () => {
+    loadCircles()
   }
 
   const handleCreateCircle = () => {
