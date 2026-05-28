@@ -18,6 +18,9 @@ export default defineAppConfig({
     'pages/publish-post/index',
     'pages/publish-activity/index',
     'pages/submit-resource/index',
+    'pages/item-detail/index',
+    'pages/item-edit/index',
+    'pages/item-submit/index',
     'pages/index/index'
   ],
   window: {

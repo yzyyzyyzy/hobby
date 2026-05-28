@@ -173,6 +173,58 @@ export const resourceSubmissions = pgTable("resource_submissions", {
   index("resource_submissions_status_idx").on(table.status),
 ]);
 
+// ===== Resource Items (资料条目) =====
+export const resourceItems = pgTable("resource_items", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  resource_id: varchar("resource_id", { length: 36 }).notNull().references(() => resources.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 128 }).notNull(),
+  subtitle: varchar("subtitle", { length: 256 }),
+  image_url: text("image_url"),
+  rich_content: jsonb("rich_content").default({}),
+  city: varchar("city", { length: 64 }),
+  tags: jsonb("tags").default(sql`'[]'`),
+  sort_order: integer("sort_order").notNull().default(0),
+  like_count: integer("like_count").notNull().default(0),
+  status: varchar("status", { length: 20 }).notNull().default("approved"), // approved/pending
+  submitted_by: varchar("submitted_by", { length: 36 }).references(() => users.id),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updated_at: timestamp("updated_at", { withTimezone: true }),
+}, (table) => [
+  index("resource_items_resource_id_idx").on(table.resource_id),
+  index("resource_items_city_idx").on(table.city),
+  index("resource_items_status_idx").on(table.status),
+  index("resource_items_sort_idx").on(table.resource_id, table.sort_order),
+]);
+
+// ===== Resource Item Likes (条目点赞) =====
+export const resourceItemLikes = pgTable("resource_item_likes", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  item_id: varchar("item_id", { length: 36 }).notNull().references(() => resourceItems.id, { onDelete: "cascade" }),
+  user_id: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("resource_item_likes_item_id_idx").on(table.item_id),
+  index("resource_item_likes_user_id_idx").on(table.user_id),
+]);
+
+// ===== Resource Item Submissions (条目提交审核) =====
+export const resourceItemSubmissions = pgTable("resource_item_submissions", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  item_id: varchar("item_id", { length: 36 }).references(() => resourceItems.id, { onDelete: "cascade" }),
+  resource_id: varchar("resource_id", { length: 36 }).notNull().references(() => resources.id, { onDelete: "cascade" }),
+  user_id: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
+  submission_type: varchar("submission_type", { length: 20 }).notNull(), // correction/new/supplement
+  content: jsonb("content").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  review_note: text("review_note"),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("resource_item_submissions_item_id_idx").on(table.item_id),
+  index("resource_item_submissions_resource_id_idx").on(table.resource_id),
+  index("resource_item_submissions_user_id_idx").on(table.user_id),
+  index("resource_item_submissions_status_idx").on(table.status),
+]);
+
 // ===== Messages (通知) =====
 export const messages = pgTable("messages", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),

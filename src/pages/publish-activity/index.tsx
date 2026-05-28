@@ -95,7 +95,7 @@ export default function PublishActivity() {
   return (
     <View className="h-full bg-neutral-50">
       {showCirclePicker && (
-        <View className="fixed inset-0 z-50 bg-black/50" onClick={() => setShowCirclePicker(false)}>
+        <View className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={() => setShowCirclePicker(false)}>
           <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 max-h-70vh overflow-y-auto">
             <Text className="block text-base font-bold text-neutral-900 mb-4">选择圈子</Text>
             {circles.map(c => (
@@ -113,7 +113,7 @@ export default function PublishActivity() {
       )}
 
       {showSafety && (
-        <View className="fixed inset-0 z-50 bg-black/50" onClick={() => setShowSafety(false)}>
+        <View className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={() => setShowSafety(false)}>
           <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 max-h-60vh overflow-y-auto">
             <Text className="block text-base font-bold text-neutral-900 mb-3">安全须知</Text>
             <Text className="block text-sm text-neutral-600 leading-6">1. 参加户外活动前，请确保自身身体状况良好，无不适合参加活动的疾病。{'\n'}2. 活动过程中请听从组织者安排，不得擅自离队。{'\n'}3. 请随身携带紧急联系人的联系方式，确保手机电量充足。{'\n'}4. 活动中注意人身和财产安全，如遇紧急情况请及时求助。{'\n'}5. 未成年人参加活动需有监护人陪同。{'\n'}6. 本平台仅提供信息发布服务，不对活动本身的安全性承担责任。</Text>

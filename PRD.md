@@ -52,9 +52,13 @@ Hobby
 │   ├── 管理员入口（管理员可见）
 │   └── 联系客服
 ├── 圈子详情页
-│   ├── 资料库Tab（排行榜/图集/列表模板）
+│   ├── 资料库Tab（排行榜/图集/列表模板 + 条目预览）
 │   ├── 动态Tab（帖子Feed + 互动）
 │   └── 找搭子Tab（活动列表 + 报名）
+├── 资料库详情页（条目列表 + 城市筛选 + 热度排序）
+├── 条目详情页（富文本内容 + 爱心点赞 + 纠错/提交入口）
+├── 条目编辑页（主理人/管理员编辑）
+├── 条目提交页（普通用户纠错/补充/新增）
 ├── 管理员后台
 │   ├── 概览统计
 │   ├── 圈子管理（CRUD）
@@ -66,7 +70,10 @@ Hobby
 └── 子页面
     ├── 帖子详情（二级评论）
     ├── 活动详情（报名/状态流转）
-    ├── 资料详情（参数表格/图文）
+    ├── 资料详情（条目列表 + 城市筛选 + 热度排序）
+    ├── 条目详情（富文本/图片/价格/位置/点赞/编辑）
+    ├── 条目编辑（主理人/管理员编辑条目内容）
+    ├── 条目提交（用户纠错/补充/新增）
     ├── 搜索页
     └── 编辑资料页
 ```
@@ -176,27 +183,101 @@ Hobby
 | 图集 | `gallery` | 图片 + 标题 + 副标题卡片网格 | 滑雪品牌图集、骑行用品图集 |
 | 列表 | `list` | 标题 + 标签 + 副标题列表 | 滑雪必备装备清单、骑行装备清单 |
 
-**数据结构**（template_data JSON）：
+**资料库条目（Resource Items）**：
+
+每个资料模板下包含多个条目（`resource_items` 表），每个条目拥有独立的详情页。
+
+| 字段 | 说明 | 示例 |
+|------|------|------|
+| title | 条目标题 | 北大壶滑雪场 |
+| subtitle | 副标题 | 吉林·亚洲顶级 |
+| image_url | 封面图 | TOS 对象存储 URL |
+| city | 城市（用于筛选） | 吉林 |
+| tags | 标签数组 | ["粉雪","高级道"] |
+| like_count | 点赞数 | 128 |
+| rich_content | 富文本内容 (JSONB) | 见下方结构 |
+
+**富文本内容结构（rich_content JSONB）**：
 
 ```jsonc
-// ranking 排行榜
-{ "items": [{ "rank": 1, "title": "北大壶滑雪场", "subtitle": "吉林", "score": 98, "detail": "亚洲顶级滑雪场" }] }
+// 滑雪场类
+{
+  "intro": "北大壶滑雪场位于吉林省...",
+  "season": "11月中旬-次年3月底",
+  "price": "平日280元/天，周末380元/天",
+  "location": "吉林省吉林市北大壶开发区",
+  "trails": "高级道6条、中级道8条、初级道4条",
+  "highlights": ["亚洲最大粉雪基地", "冬奥标准赛道"],
+  "tips": "建议提前预约教练..."
+}
 
-// gallery 图集
-{ "items": [{ "title": "Burton", "subtitle": "单板之王", "image_url": "https://..." }] }
+// 骑行路线类
+{
+  "intro": "环海南岛骑行是...",
+  "distance": "约800公里",
+  "duration": "7-10天",
+  "difficulty": "中等",
+  "best_season": "10月-次年2月",
+  "location": "海南省",
+  "pros": ["风景优美", "路况良好"],
+  "cons": ["夏季高温", "台风季节"],
+  "highlights": ["最美海岸线", "热带风光"]
+}
 
-// list 列表
-{ "items": [{ "title": "滑雪板", "subtitle": "双板/单板", "tags": ["必备"] }] }
+// 品牌类
+{
+  "intro": "Burton是全球领先的单板品牌...",
+  "founded": "1977年",
+  "origin": "美国佛蒙特州",
+  "categories": ["单板", "固定器", "雪鞋", "服装"],
+  "price_range": "中高端（雪板 3000-8000元）",
+  "buying_tips": ["新手建议选择全能型板", "注意板长与体重匹配"]
+}
+
+// 装备类
+{
+  "intro": "滑雪板是滑雪运动的核心装备...",
+  "specs": { "类型": "双板/单板", "材质": "木质/复合材料" },
+  "buying_tips": ["根据水平选择硬度", "新手建议租赁体验"]
+}
 ```
 
-**管理权限**：
-- 管理员：通过后台创建/编辑/删除资料模板
-- 普通用户：可提交补充/纠错（进入审核队列，管理员审批后生效）
+**条目详情页功能**：
 
-**资料详情页**：
-- 排行榜详情：完整排名、评分说明、详细介绍
-- 图集详情：大图展示、品牌介绍、外部链接
-- 列表详情：参数表格、购买建议、备注
+| 功能 | 说明 |
+|------|------|
+| 封面展示 | 顶部大图/品牌首字母封面 |
+| 爱心点赞 | 用户可点赞/取消，实时更新点赞数 |
+| 城市标签 | 展示条目城市和标签 |
+| 关键信息 | 季节/价格/地址/距离/难度等结构化展示 |
+| 亮点特色 | 编号列表展示 |
+| 优缺点 | 骑行路线特有，左右分栏 |
+| 选购建议 | 装备/品牌类特有 |
+| 规格参数 | 装备类特有，键值对表格 |
+| 纠错/补充 | 普通用户提交纠错或补充内容，进入审核队列 |
+| 提交新增 | 普通用户提交新条目，经审核后展示 |
+| 编辑 | 圈子主理人和管理员可编辑条目内容 |
+
+**城市筛选与排序**：
+
+- 资料详情页（列表页）支持按城市筛选条目
+- 支持按热度（点赞数）排序，默认按排序字段
+- 城市列表从已有条目数据中动态获取
+
+**管理权限**：
+
+| 角色 | 权限 |
+|------|------|
+| 管理员 | 直接编辑条目、审核用户提交、管理所有资料模板 |
+| 圈子主理人 | 编辑本圈子条目（编辑后需管理员审核）、审核用户提交 |
+| 普通用户 | 提交纠错/补充、提交新增条目（均需审核） |
+
+**审核流程**：
+
+1. 用户提交纠错/补充 → 进入 `resource_item_submissions` 表 → 主理人/管理员审核
+2. 用户提交新增条目 → 进入审核队列 → 主理人/管理员审批后创建条目
+3. 主理人编辑条目 → 需管理员审核后生效
+4. 管理员编辑条目 → 直接生效
 
 #### 3.3.3 动态Feed Tab
 
@@ -457,6 +538,9 @@ TabBar"发布"按钮 → 发布中心页面，展示三个功能卡片。
 | activities | 活动表 | circle_id, user_id, title, activity_time, location, max_participants, status, safety_agreed, emergency_contact |
 | activity_registrations | 活动报名表 | activity_id, user_id, status, auto_approved |
 | resources | 资料模板表 | circle_id, title, template_type(ranking/gallery/list), template_data(JSON), description, sort_order |
+| resource_items | 资料条目表 | resource_id, title, subtitle, image_url, rich_content(JSONB), city, tags, sort_order, like_count, status, submitted_by |
+| resource_item_likes | 条目点赞表 | item_id, user_id（唯一约束） |
+| resource_item_submissions | 条目提交表 | item_id, resource_id, user_id, type(correction/new/supplement), content, status |
 | resource_submissions | 资料提交表 | resource_id, user_id, content, status |
 | messages | 消息表 | user_id, type, title, content, is_read |
 | notification_settings | 通知设置表 | user_id, circle_id, type, muted |
@@ -472,6 +556,9 @@ users 1──N posts N──1 circles
 users 1──N activities N──1 circles
 circles 1──N resources
 circles 1──N circle_applications
+resources 1──N resource_items
+resource_items 1──N resource_item_likes
+resource_items 1──N resource_item_submissions
 posts 1──N comments (parent_id 支持二级)
 posts 1──N post_likes
 activities 1──N activity_registrations
@@ -533,7 +620,11 @@ activities 1──N activity_registrations
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | /circle/:circleId | 获取圈子资料模板列表 |
-| GET | /:id | 资料详情 |
+| GET | /items/:resourceId?city=&userId= | 获取条目列表（支持城市筛选+点赞数排序） |
+| GET | /item/:itemId?userId= | 条目详情（含is_liked） |
+| POST | /item/:itemId/like | 点赞/取消点赞 |
+| POST | /items/submit | 提交新条目/纠错补充 |
+| PUT | /item/:itemId | 编辑条目（主理人/管理员） |
 | POST | /submissions | 提交补充/纠错 |
 
 ### 5.7 消息模块 `/api/messages`

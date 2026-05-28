@@ -99,7 +99,7 @@ export default function PublishPost() {
     <View className="h-full bg-neutral-50">
       {/* Circle Picker Modal */}
       {showCirclePicker && (
-        <View className="fixed inset-0 z-50 bg-black/50" onClick={() => setShowCirclePicker(false)}>
+        <View className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={() => setShowCirclePicker(false)}>
           <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 max-h-70vh overflow-y-auto">
             <Text className="block text-base font-bold text-neutral-900 mb-4">选择圈子</Text>
             {circles.map(c => (
