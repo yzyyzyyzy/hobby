@@ -323,7 +323,7 @@ export default function ResourceDetail() {
         <Button
           className="w-full bg-orange-500"
           onClick={() => {
-            if (resource) Taro.navigateTo({ url: `/pages/item-submit/index?resourceId=${resource.id}&type=new` })
+            if (resource) Taro.navigateTo({ url: `/pages/item-submit/index?resourceId=${resource.id}&type=new&templateType=${resource.template_type || 'ranking'}&categoryHint=${encodeURIComponent(resource.title || '')}` })
           }}
         >
           <View className="flex flex-row items-center justify-center">

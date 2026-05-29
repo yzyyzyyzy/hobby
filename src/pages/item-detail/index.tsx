@@ -38,6 +38,7 @@ export default function ItemDetail() {
   const [likeCount, setLikeCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [isCircleOwner, setIsCircleOwner] = useState(false)
+  const [resourceInfo, setResourceInfo] = useState<any>(null)
   const isAdmin = userInfo?.role === 'admin'
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export default function ItemDetail() {
         try {
           const resRes = await Network.request({ url: `/api/resources/${data.resource_id}` })
           const resData = resRes.data?.data || resRes.data
+          setResourceInfo(resData)
           if (resData?.circle_id) {
             const memberRes = await Network.request({ url: `/api/circles/${resData.circle_id}?user_id=${userInfo.id}` })
             const memberData = memberRes.data?.data || memberRes.data
@@ -341,7 +343,7 @@ export default function ItemDetail() {
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => Taro.navigateTo({ url: `/pages/item-submit/index?id=${item.id}&type=correction` })}
+            onClick={() => Taro.navigateTo({ url: `/pages/item-submit/index?id=${item.id}&resourceId=${item.resource_id}&type=correction&templateType=${resourceInfo?.template_type || 'ranking'}&categoryHint=${encodeURIComponent(resourceInfo?.title || '')}` })}
           >
             <View className="flex flex-row items-center justify-center">
               <MessageSquare size={14} color="#f97316" />
@@ -353,7 +355,7 @@ export default function ItemDetail() {
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => Taro.navigateTo({ url: `/pages/item-submit/index?id=${item.id}&type=new` })}
+            onClick={() => Taro.navigateTo({ url: `/pages/item-submit/index?resourceId=${item.resource_id}&type=new&templateType=${resourceInfo?.template_type || 'ranking'}&categoryHint=${encodeURIComponent(resourceInfo?.title || '')}` })}
           >
             <View className="flex flex-row items-center justify-center">
               <CirclePlus size={14} color="#3b82f6" />

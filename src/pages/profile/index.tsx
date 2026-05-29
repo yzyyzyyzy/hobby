@@ -9,7 +9,7 @@ import { useUserStore } from '@/store/user-store'
 import { Network } from '@/network'
 import Taro from '@tarojs/taro'
 import { useState, useEffect } from 'react'
-import { Settings, ChevronRight, BookOpen, Users, FileText, ShieldCheck, Headset } from 'lucide-react-taro'
+import { Settings, ChevronRight, BookOpen, Users, FileText, ShieldCheck, Headset, Bell } from 'lucide-react-taro'
 
 interface CircleItem {
   id: string
@@ -250,6 +250,14 @@ export default function Profile() {
               <View className="flex flex-row items-center gap-3">
                 <BookOpen size={16} color="#737373" />
                 <Text className="block text-sm text-neutral-700">编辑资料</Text>
+              </View>
+              <ChevronRight size={16} color="#737373" />
+            </View>
+            <Separator />
+            <View className="flex flex-row items-center justify-between py-3" onClick={() => Taro.navigateTo({ url: '/pages/notifications/index' })}>
+              <View className="flex flex-row items-center gap-3">
+                <Bell size={16} color="#737373" />
+                <Text className="block text-sm text-neutral-700">消息通知</Text>
               </View>
               <ChevronRight size={16} color="#737373" />
             </View>

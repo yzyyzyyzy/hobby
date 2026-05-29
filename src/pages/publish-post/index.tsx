@@ -22,10 +22,12 @@ export default function PublishPost() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    loadMyCircles()
+    const params = Taro.getCurrentInstance().router?.params
+    const preselectedCircleId = params?.circleId
+    loadMyCircles(preselectedCircleId)
   }, [])
 
-  const loadMyCircles = async () => {
+  const loadMyCircles = async (preselectedCircleId?: string) => {
     try {
       const userId = userInfo?.id || Taro.getStorageSync('userId')
       const res = await Network.request({
@@ -36,7 +38,14 @@ export default function PublishPost() {
       console.log('[PublishPost] my circles:', res.data)
       const list = res.data?.data || []
       setCircles(list)
-      if (list.length > 0) {
+      // 如果有预选圈子ID，直接选中
+      if (preselectedCircleId) {
+        const found = list.find((c: any) => c.id === preselectedCircleId)
+        if (found) {
+          setSelectedCircleId(found.id)
+          setSelectedCircleName(found.name)
+        }
+      } else if (list.length > 0) {
         setSelectedCircleId(list[0].id)
         setSelectedCircleName(list[0].name)
       }

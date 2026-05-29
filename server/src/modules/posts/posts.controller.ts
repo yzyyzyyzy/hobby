@@ -15,6 +15,15 @@ export class PostsController {
     return { code: 200, msg: 'success', data: result }
   }
 
+  @Get('featured')
+  async getFeaturedPosts(
+    @Query('user_id') userId: string,
+  ) {
+    console.log('[Posts] GET /api/posts/featured', { userId })
+    const result = await this.postsService.getFeaturedPosts(userId)
+    return { code: 200, msg: 'success', data: result }
+  }
+
   @Get(':id')
   async getPost(@Param('id') id: string) {
     console.log('[Posts] GET /api/posts/:id', id)

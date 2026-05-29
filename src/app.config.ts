@@ -21,6 +21,7 @@ export default defineAppConfig({
     'pages/item-detail/index',
     'pages/item-edit/index',
     'pages/item-submit/index',
+    'pages/notifications/index',
     'pages/index/index'
   ],
   window: {
@@ -43,9 +44,9 @@ export default defineAppConfig({
       },
       {
         pagePath: 'pages/messages/index',
-        text: '消息',
-        iconPath: './assets/tabbar/bell.png',
-        selectedIconPath: './assets/tabbar/bell-active.png'
+        text: '广场',
+        iconPath: './assets/tabbar/newspaper.png',
+        selectedIconPath: './assets/tabbar/newspaper-active.png'
       },
       {
         pagePath: 'pages/publish/index',

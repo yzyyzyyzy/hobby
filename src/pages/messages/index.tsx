@@ -1,142 +1,168 @@
-import { View, Text } from '@tarojs/components'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Network } from '@/network'
-import Taro from '@tarojs/taro'
 import { useState, useEffect } from 'react'
-import { MessageCircle, UserPlus, Megaphone, Info } from 'lucide-react-taro'
+import { View, Text } from '@tarojs/components'
+import Taro from '@tarojs/taro'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Network } from '@/network'
+import { useUserStore } from '@/store/user-store'
+import { Heart, MessageCircle, ChevronRight } from 'lucide-react-taro'
 
-interface MessageItem {
-  id: string
-  type: string
-  title: string
-  content: string
-  related_id: string
-  circle_id: string
-  circle_name: string
-  is_read: boolean
-  created_at: string
-}
-
-export default function Messages() {
-  const [messages, setMessages] = useState<MessageItem[]>([])
-  const [activeTab, setActiveTab] = useState('all')
+export default function FeedSquare() {
+  const { userInfo } = useUserStore()
+  const [posts, setPosts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadMessages()
+    loadFeaturedPosts()
   }, [])
 
-  const loadMessages = async () => {
+  const loadFeaturedPosts = async () => {
     try {
-      const res = await Network.request({ url: '/api/messages', method: 'GET' })
-      console.log('Messages:', res.data)
-      if (res.data?.data) setMessages(res.data.data)
-    } catch (err) {
-      console.error('Load messages failed:', err)
+      setLoading(true)
+      const userId = userInfo?.id || Taro.getStorageSync('userId')
+      const res = await Network.request({
+        url: '/api/posts/featured',
+        method: 'GET',
+        data: userId ? { user_id: userId } : {},
+      })
+      console.log('[FeedSquare] featured posts:', res.data)
+      const list = res.data?.data || []
+      setPosts(list)
+    } catch (e) {
+      console.error('[FeedSquare] load failed:', e)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const markAsRead = async (id: string) => {
-    try {
-      await Network.request({ url: `/api/messages/${id}/read`, method: 'PUT' })
-      setMessages((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, is_read: true } : m))
-      )
-    } catch (err) {
-      console.error('Mark read failed:', err)
-    }
+  const goToCircleDetail = (circleId: string) => {
+    Taro.navigateTo({ url: `/pages/circle-detail/index?id=${circleId}` })
   }
 
-  const typeIcon: Record<string, { icon: typeof MessageCircle; color: string }> = {
-    comment: { icon: MessageCircle, color: '#3B82F6' },
-    registration: { icon: UserPlus, color: '#22C55E' },
-    announcement: { icon: Megaphone, color: '#F97316' },
-    system: { icon: Info, color: '#737373' },
+  const goToPostDetail = (postId: string) => {
+    Taro.navigateTo({ url: `/pages/post-detail/index?id=${postId}` })
   }
 
-  const filteredMessages = activeTab === 'all'
-    ? messages
-    : messages.filter((m) => m.type === activeTab)
+  const formatTime = (timeStr: string) => {
+    const date = new Date(timeStr)
+    const now = new Date()
+    const diff = now.getTime() - date.getTime()
+    const minutes = Math.floor(diff / 60000)
+    if (minutes < 60) return `${minutes}分钟前`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}小时前`
+    const days = Math.floor(hours / 24)
+    if (days < 7) return `${days}天前`
+    return `${date.getMonth() + 1}月${date.getDate()}日`
+  }
 
-  const unreadCount = messages.filter((m) => !m.is_read).length
+  if (loading) {
+    return (
+      <View className="flex flex-col min-h-screen bg-gray-50">
+        <View className="px-4 pt-4 pb-2">
+          <Text className="block text-xl font-bold text-gray-900">动态广场</Text>
+          <Text className="block text-sm text-gray-500 mt-1">近一周圈子精选动态</Text>
+        </View>
+        {[1, 2, 3].map(i => (
+          <View key={i} className="mx-4 mb-3">
+            <Skeleton className="h-32 w-full rounded-xl" />
+          </View>
+        ))}
+      </View>
+    )
+  }
 
   return (
-    <View className="h-full bg-neutral-50">
-      {/* 顶部 */}
-      <View className="bg-white px-4 pt-4 pb-2">
-        <View className="flex flex-row items-center justify-between">
-          <Text className="block text-xl font-bold text-neutral-900">消息</Text>
-          {unreadCount > 0 && (
-            <Badge className="bg-red-500 text-white">{unreadCount}条未读</Badge>
-          )}
+    <View className="flex flex-col min-h-screen bg-gray-50">
+      {/* Header */}
+      <View className="px-4 pt-4 pb-2">
+        <Text className="block text-xl font-bold text-gray-900">动态广场</Text>
+        <Text className="block text-sm text-gray-500 mt-1">近一周圈子精选动态，按热度排序</Text>
+      </View>
+
+      {/* Post List */}
+      {posts.length === 0 ? (
+        <View className="flex flex-col items-center justify-center py-20">
+          <Text className="block text-gray-400 text-lg">暂无精选动态</Text>
+          <Text className="block text-gray-400 text-sm mt-2">加入圈子后，精彩动态将出现在这里</Text>
         </View>
-      </View>
+      ) : (
+        <View className="px-4 pb-4">
+          {posts.map((post) => (
+            <Card key={post.id} className="mb-3 overflow-hidden">
+              <CardContent className="p-4">
+                {/* Circle info bar */}
+                <View
+                  className="flex flex-row items-center mb-3"
+                  onClick={() => goToCircleDetail(post.circle_id)}
+                >
+                  <View className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center mr-2 overflow-hidden">
+                    {post.circle_icon ? (
+                      <Text className="text-xs">🔵</Text>
+                    ) : (
+                      <Text className="text-xs">📝</Text>
+                    )}
+                  </View>
+                  <Text className="text-sm text-orange-600 font-medium">{post.circle_name}</Text>
+                  <View className="ml-auto">
+                    <ChevronRight size={14} color="#9ca3af" />
+                  </View>
+                </View>
 
-      {/* 分类Tab */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as string)}>
-        <TabsList className="w-full">
-          <TabsTrigger value="all" className="flex-1">全部</TabsTrigger>
-          <TabsTrigger value="comment" className="flex-1">评论</TabsTrigger>
-          <TabsTrigger value="registration" className="flex-1">报名</TabsTrigger>
-          <TabsTrigger value="system" className="flex-1">系统</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value={activeTab}>
-          <View className="px-4 py-3 space-y-2">
-            {filteredMessages.length > 0 ? (
-              filteredMessages.map((msg) => {
-                const iconInfo = typeIcon[msg.type] || typeIcon.system
-                const IconComp = iconInfo.icon
-                return (
-                  <Card
-                    key={msg.id}
-                    className={msg.is_read ? 'opacity-70' : ''}
-                    onClick={() => {
-                      markAsRead(msg.id)
-                      if (msg.related_id) {
-                        if (msg.type === 'comment') {
-                          Taro.navigateTo({ url: `/pages/post-detail/index?id=${msg.related_id}` })
-                        } else if (msg.type === 'registration') {
-                          Taro.navigateTo({ url: `/pages/activity-detail/index?id=${msg.related_id}` })
-                        }
-                      }
-                    }}
-                  >
-                    <CardContent className="p-4">
-                      <View className="flex flex-row items-start gap-3">
-                        <View className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${iconInfo.color}15` }}>
-                          <IconComp size={16} color={iconInfo.color} />
-                        </View>
-                        <View className="flex-1 min-w-0">
-                          <View className="flex flex-row items-center justify-between">
-                            <Text className="block text-sm font-semibold text-neutral-900">{msg.title}</Text>
-                            {!msg.is_read && <View className="w-2 h-2 rounded-full bg-orange-500" />}
-                          </View>
-                          <Text className="block text-xs text-neutral-500 mt-1 line-clamp-2">{msg.content}</Text>
-                          <Text className="block text-xs text-neutral-400 mt-1">{msg.created_at?.slice(5, 16)}</Text>
-                        </View>
+                {/* User info */}
+                <View className="flex flex-row items-center mb-2">
+                  <View className="w-8 h-8 rounded-full bg-gray-200 mr-2 overflow-hidden">
+                    {post.user_avatar ? (
+                      <Text className="text-xs">👤</Text>
+                    ) : (
+                      <View className="w-full h-full flex items-center justify-center">
+                        <Text className="text-xs text-gray-500">
+                          {(post.user_nickname || '?')[0]}
+                        </Text>
                       </View>
-                    </CardContent>
-                  </Card>
-                )
-              })
-            ) : (
-              <View className="flex flex-col items-center py-12">
-                <Text className="block text-3xl mb-2">📭</Text>
-                <Text className="block text-sm text-neutral-400">暂无消息</Text>
-              </View>
-            )}
-          </View>
-        </TabsContent>
-      </Tabs>
+                    )}
+                  </View>
+                  <View className="flex flex-col">
+                    <Text className="block text-sm font-medium text-gray-900">{post.user_nickname}</Text>
+                    <Text className="block text-xs text-gray-400">{formatTime(post.created_at)}</Text>
+                  </View>
+                </View>
 
-      {/* 底部声明 */}
-      <View className="px-4 py-4">
-        <Text className="block text-xs text-neutral-400 text-center">
-          不开放用户间私信 | 免打扰设置请在个人中心调整
-        </Text>
-      </View>
+                {/* Content */}
+                <View onClick={() => goToPostDetail(post.id)}>
+                  <Text className="block text-sm text-gray-800 leading-relaxed mb-2" numberOfLines={4}>
+                    {post.content}
+                  </Text>
+
+                  {/* Tags */}
+                  {post.tags && post.tags.length > 0 && (
+                    <View className="flex flex-row flex-wrap gap-1 mb-2">
+                      {post.tags.map((tag: string, idx: number) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          <Text className="text-xs">#{tag}</Text>
+                        </Badge>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Interaction bar */}
+                  <View className="flex flex-row items-center gap-4 mt-2 pt-2 border-t border-gray-100">
+                    <View className="flex flex-row items-center">
+                      <Heart size={14} color="#ef4444" />
+                      <Text className="block text-xs text-gray-500 ml-1">{post.likes_count || 0}</Text>
+                    </View>
+                    <View className="flex flex-row items-center">
+                      <MessageCircle size={14} color="#9ca3af" />
+                      <Text className="block text-xs text-gray-500 ml-1">{post.comments_count || 0}</Text>
+                    </View>
+                  </View>
+                </View>
+              </CardContent>
+            </Card>
+          ))}
+        </View>
+      )}
     </View>
   )
 }

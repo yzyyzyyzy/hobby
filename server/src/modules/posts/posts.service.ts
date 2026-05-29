@@ -48,6 +48,68 @@ export class PostsService {
     return posts
   }
 
+  async getFeaturedPosts(userId: string) {
+    const client = getSupabaseClient()
+
+    // 1. Get user's joined circle IDs
+    let circleIds: string[] = []
+    if (userId) {
+      const { data: memberships } = await client
+        .from('circle_members')
+        .select('circle_id')
+        .eq('user_id', userId)
+      circleIds = (memberships || []).map((m: any) => m.circle_id)
+    }
+
+    // 2. Get top posts from last 7 days, ranked by likes_count
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+    let query = client
+      .from('posts')
+      .select('id, content, images, tags, likes_count, comments_count, user_id, circle_id, created_at')
+      .eq('is_draft', false)
+      .gte('created_at', sevenDaysAgo.toISOString())
+      .order('likes_count', { ascending: false })
+
+    // Filter to user's circles if logged in, otherwise all
+    if (circleIds.length > 0) {
+      query = query.in('circle_id', circleIds)
+    }
+
+    const { data: posts, error } = await query.limit(50)
+    if (error) throw new Error(`Get featured posts failed: ${error.message}`)
+
+    if (!posts || posts.length === 0) return []
+
+    // 3. Enrich with user and circle info
+    const userIds = [...new Set(posts.map((p: any) => p.user_id))]
+    const circleIdsUnique = [...new Set(posts.map((p: any) => p.circle_id))]
+
+    const [usersRes, circlesRes] = await Promise.all([
+      client.from('users').select('id, nickname, avatar_url').in('id', userIds),
+      client.from('circles').select('id, name, cover_url').in('id', circleIdsUnique),
+    ])
+
+    const userMap = new Map((usersRes.data || []).map((u: any) => [u.id, u]))
+    const circleMap = new Map((circlesRes.data || []).map((c: any) => [c.id, c]))
+
+    return posts.map((p: any) => ({
+      id: p.id,
+      content: p.content,
+      images: p.images || [],
+      tags: p.tags || [],
+      likes_count: p.likes_count,
+      comments_count: p.comments_count,
+      user_nickname: userMap.get(p.user_id)?.nickname || '未知用户',
+      user_avatar: userMap.get(p.user_id)?.avatar_url || '',
+      circle_id: p.circle_id,
+      circle_name: circleMap.get(p.circle_id)?.name || '',
+      circle_icon: circleMap.get(p.circle_id)?.cover_url || '',
+      created_at: p.created_at,
+    }))
+  }
+
   async getPost(id: string) {
     const client = getSupabaseClient()
     const { data, error } = await client
