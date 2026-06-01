@@ -37,7 +37,7 @@ export default function PublishActivity() {
 
   const loadMyCircles = async (preselectedCircleId?: string) => {
     try {
-      const userId = userInfo?.id || Taro.getStorageSync('userId')
+      const userId = userInfo?.id || Taro.getStorageSync('user_id')
       const res = await Network.request({
         url: '/api/users/circles',
         method: 'GET',
@@ -69,7 +69,7 @@ export default function PublishActivity() {
 
     setSubmitting(true)
     try {
-      const userId = userInfo?.id || Taro.getStorageSync('userId')
+      const userId = userInfo?.id || Taro.getStorageSync('user_id')
       const res = await Network.request({
         url: '/api/activities',
         method: 'POST',

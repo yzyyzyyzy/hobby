@@ -1,9 +1,8 @@
 import { useState, useCallback, useEffect } from 'react'
 import { View, Text } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { Search, Users, Flame, CirclePlus } from 'lucide-react-taro'
+import { Search, Users, Flame, CirclePlus, TrendingUp } from 'lucide-react-taro'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -30,6 +29,13 @@ const CATEGORIES = [
   { key: '生活', label: '生活' },
 ]
 
+const CATEGORY_EMOJIS: Record<string, string> = {
+  '运动': '🏂',
+  '户外': '🏕️',
+  '文化': '📚',
+  '生活': '☕',
+}
+
 export default function Square() {
   const [circles, setCircles] = useState<CircleItem[]>([])
   const [myCircles, setMyCircles] = useState<CircleItem[]>([])
@@ -39,7 +45,6 @@ export default function Square() {
   const [activeTab, setActiveTab] = useState('all')
   const { userInfo } = useUserStore()
 
-  // 加载全部圈子
   const loadCircles = useCallback(async () => {
     setLoading(true)
     try {
@@ -64,7 +69,6 @@ export default function Square() {
     }
   }, [category, keyword, userInfo?.id])
 
-  // 独立加载我的圈子
   const loadMyCircles = useCallback(async () => {
     if (!userInfo?.id) {
       setMyCircles([])
@@ -84,7 +88,6 @@ export default function Square() {
     }
   }, [userInfo?.id])
 
-  // 刷新所有数据
   const refreshAll = useCallback(async () => {
     await Promise.all([loadCircles(), loadMyCircles()])
   }, [loadCircles, loadMyCircles])
@@ -97,7 +100,6 @@ export default function Square() {
     loadMyCircles()
   }, [loadMyCircles])
 
-  // 页面显示时刷新（切回广场Tab时触发）
   Taro.useDidShow(() => {
     refreshAll()
   })
@@ -117,16 +119,10 @@ export default function Square() {
       })
       console.log(`${isJoined ? 'Leave' : 'Join'} circle response:`, res.data)
       if (res.data?.code === 200 || res.data?.data) {
-        Taro.showToast({
-          title: isJoined ? '已退出圈子' : '加入成功',
-          icon: 'success',
-        })
+        Taro.showToast({ title: isJoined ? '已退出圈子' : '加入成功', icon: 'success' })
         refreshAll()
       } else {
-        Taro.showToast({
-          title: res.data?.msg || (isJoined ? '退出失败' : '加入失败'),
-          icon: 'none',
-        })
+        Taro.showToast({ title: res.data?.msg || (isJoined ? '退出失败' : '加入失败'), icon: 'none' })
       }
     } catch (err) {
       console.error('Join/Leave circle error:', err)
@@ -150,14 +146,25 @@ export default function Square() {
   const displayCircles = activeTab === 'my' ? myCircles : circles
 
   return (
-    <View className="h-full bg-neutral-50">
-      {/* 搜索栏 */}
-      <View className="bg-white px-4 pt-2 pb-3">
-        <View className="bg-neutral-100 rounded-xl px-3 py-2 flex flex-row items-center gap-2" onClick={handleSearch}>
-          <Search size={16} color="#737373" />
+    <View className="h-full bg-stone-50">
+      {/* Header with search */}
+      <View className="bg-gradient-to-b from-orange-500 to-orange-400 px-5 pt-4 pb-6">
+        <View className="flex flex-row items-center justify-between mb-4">
+          <View>
+            <Text className="block text-xl font-bold text-white">发现圈子</Text>
+            <Text className="block text-xs text-orange-100 mt-1">找到志同道合的伙伴</Text>
+          </View>
+          <View onClick={handleCreateCircle} className="bg-white bg-opacity-20 rounded-full px-3 py-2 flex flex-row items-center gap-1">
+            <CirclePlus size={14} color="#FFFFFF" />
+            <Text className="block text-xs text-white font-medium">创建</Text>
+          </View>
+        </View>
+        <View className="bg-white bg-opacity-90 rounded-2xl px-4 py-3 flex flex-row items-center gap-2" onClick={handleSearch}>
+          <Search size={16} color="#A8A29E" />
           <Input
-            className="flex-1 bg-transparent text-sm"
+            className="flex-1 bg-transparent text-sm text-stone-800"
             placeholder="搜索圈子、标签..."
+            placeholderClass="text-stone-400"
             value={keyword}
             onInput={(e) => setKeyword(e.detail.value)}
             onConfirm={handleSearch}
@@ -165,12 +172,12 @@ export default function Square() {
         </View>
       </View>
 
-      {/* 分类 Tabs */}
-      <View className="bg-white px-4 pb-2">
+      {/* Category pills */}
+      <View className="px-5 py-3">
         <Tabs defaultValue="all" value={category} onValueChange={(v) => setCategory(v as string)}>
-          <TabsList className="w-full">
+          <TabsList className="w-full bg-transparent gap-2">
             {CATEGORIES.map((cat) => (
-              <TabsTrigger key={cat.key} value={cat.key} className="flex-1">
+              <TabsTrigger key={cat.key} value={cat.key} className="flex-1 data-[state=active]:bg-orange-500 data-[state=active]:text-white rounded-full bg-white text-stone-600 shadow-sm">
                 {cat.label}
               </TabsTrigger>
             ))}
@@ -178,86 +185,95 @@ export default function Square() {
         </Tabs>
       </View>
 
-      {/* 全部/我的 Tab */}
-      <View className="bg-white px-4 pb-2 flex flex-row items-center justify-between">
-        <View className="flex flex-row gap-4">
-          <Text
-            className={`block text-sm font-medium ${activeTab === 'all' ? 'text-orange-500' : 'text-neutral-500'}`}
-            onClick={() => setActiveTab('all')}
-          >
-            全部
-          </Text>
-          <Text
-            className={`block text-sm font-medium ${activeTab === 'my' ? 'text-orange-500' : 'text-neutral-500'}`}
-            onClick={() => setActiveTab('my')}
-          >
-            我的{myCircles.length > 0 ? `(${myCircles.length})` : ''}
-          </Text>
+      {/* All / My toggle */}
+      <View className="px-5 pb-3 flex flex-row items-center gap-1">
+        <View
+          className={`rounded-full px-4 py-2 ${activeTab === 'all' ? 'bg-stone-800' : 'bg-white'}`}
+          onClick={() => setActiveTab('all')}
+        >
+          <Text className={`block text-sm font-medium ${activeTab === 'all' ? 'text-white' : 'text-stone-500'}`}>全部</Text>
         </View>
-        <View onClick={handleCreateCircle} className="flex flex-row items-center gap-1">
-          <CirclePlus size={16} color="#F97316" />
-          <Text className="block text-sm text-orange-500">创建圈子</Text>
+        <View
+          className={`rounded-full px-4 py-2 ${activeTab === 'my' ? 'bg-stone-800' : 'bg-white'}`}
+          onClick={() => setActiveTab('my')}
+        >
+          <Text className={`block text-sm font-medium ${activeTab === 'my' ? 'text-white' : 'text-stone-500'}`}>我的{myCircles.length > 0 ? ` ${myCircles.length}` : ''}</Text>
         </View>
       </View>
 
-      <View className="h-2" />
-
-      {/* 圈子列表 */}
-      <View className="px-4 space-y-3 pb-4">
+      {/* Circle list */}
+      <View className="px-5 gap-3 pb-4">
         {loading ? (
-          <View className="flex items-center justify-center py-12">
-            <Text className="block text-sm text-neutral-400">加载中...</Text>
+          <View className="flex items-center justify-center py-16">
+            <View className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
           </View>
         ) : displayCircles.length > 0 ? (
-          displayCircles.map((circle) => (
-            <Card key={circle.id} className="overflow-hidden">
-              <CardContent className="p-4">
-                <View
-                  className="flex flex-row gap-3"
-                  onClick={() => Taro.navigateTo({ url: `/pages/circle-detail/index?id=${circle.id}` })}
-                >
-                  {/* 圈子封面 */}
-                  <View className="w-16 h-16 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Text className="block text-2xl">{circle.name[0]}</Text>
-                  </View>
-                  {/* 圈子信息 */}
-                  <View className="flex-1 min-w-0">
-                    <Text className="block text-sm font-semibold text-neutral-900">{circle.name}</Text>
-                    <Text className="block text-xs text-neutral-500 mt-1 line-clamp-1">{circle.description}</Text>
-                    <View className="flex flex-row items-center gap-3 mt-2">
-                      <View className="flex flex-row items-center gap-1">
-                        <Users size={12} color="#737373" />
-                        <Text className="block text-xs text-neutral-500">{circle.member_count}人</Text>
+          displayCircles.map((circle, index) => (
+            <View key={circle.id} className="mb-3">
+              <View
+                className="bg-white rounded-2xl overflow-hidden shadow-sm"
+                onClick={() => Taro.navigateTo({ url: `/pages/circle-detail/index?id=${circle.id}` })}
+              >
+                {/* Top accent line for visual interest */}
+                <View className="h-1 bg-gradient-to-r from-orange-400 to-amber-300" />
+                <View className="p-4">
+                  <View className="flex flex-row gap-3">
+                    {/* Circle avatar */}
+                    <View className="w-14 h-14 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl flex items-center justify-center flex-shrink-0 border border-orange-100">
+                      <Text className="block text-xl">{CATEGORY_EMOJIS[circle.category] || circle.name[0]}</Text>
+                    </View>
+                    {/* Info */}
+                    <View className="flex-1 min-w-0">
+                      <View className="flex flex-row items-center gap-2">
+                        <Text className="block text-base font-bold text-stone-800">{circle.name}</Text>
+                        {index < 3 && activeTab === 'all' && (
+                          <View className="bg-orange-50 rounded-full px-2 py-1 flex flex-row items-center gap-1">
+                            <TrendingUp size={10} color="#F97316" />
+                            <Text className="block text-orange-500" style={{ fontSize: '10px' }}>热门</Text>
+                          </View>
+                        )}
                       </View>
-                      <View className="flex flex-row items-center gap-1">
-                        <Flame size={12} color="#F97316" />
-                        <Text className="block text-xs text-orange-500">{circle.activity_score}</Text>
+                      <Text className="block text-xs text-stone-400 mt-1 line-clamp-1">{circle.description}</Text>
+                      <View className="flex flex-row items-center gap-3 mt-2">
+                        <View className="flex flex-row items-center gap-1">
+                          <Users size={11} color="#A8A29E" />
+                          <Text className="block text-stone-400" style={{ fontSize: '11px' }}>{circle.member_count}人</Text>
+                        </View>
+                        <View className="flex flex-row items-center gap-1">
+                          <Flame size={11} color="#FB923C" />
+                          <Text className="block text-orange-400" style={{ fontSize: '11px' }}>{circle.activity_score}</Text>
+                        </View>
+                        <Badge variant="outline" className="border-orange-200 text-orange-500" style={{ fontSize: '10px' }}>{circle.category}</Badge>
                       </View>
-                      <Badge variant="outline" className="text-xs">{circle.category}</Badge>
+                    </View>
+                    {/* Join button */}
+                    <View className="flex items-center flex-shrink-0 self-center">
+                      {circle.is_joined ? (
+                        <View className="bg-stone-100 rounded-full px-3 py-2">
+                          <Text className="block text-stone-400 text-xs font-medium">已加入</Text>
+                        </View>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="bg-orange-500 hover:bg-orange-600 text-white rounded-full px-4 shadow-sm"
+                          onClick={(e) => {
+                            e.stopPropagation && e.stopPropagation()
+                            handleJoinCircle(circle.id, circle.is_joined)
+                          }}
+                        >
+                          <Text className="text-white text-xs font-medium">加入</Text>
+                        </Button>
+                      )}
                     </View>
                   </View>
-                  {/* 加入按钮 */}
-                  <View className="flex items-center flex-shrink-0">
-                    <Button
-                      size="sm"
-                      className={circle.is_joined ? 'bg-neutral-100 text-neutral-600' : 'bg-orange-500 text-white'}
-                      onClick={(e) => {
-                        e.stopPropagation && e.stopPropagation()
-                        handleJoinCircle(circle.id, circle.is_joined)
-                      }}
-                    >
-                      <Text className={circle.is_joined ? 'text-neutral-600' : 'text-white'}>
-                        {circle.is_joined ? '已加入' : '加入'}
-                      </Text>
-                    </Button>
-                  </View>
                 </View>
-              </CardContent>
-            </Card>
+              </View>
+            </View>
           ))
         ) : (
-          <View className="flex items-center justify-center py-12">
-            <Text className="block text-sm text-neutral-400">
+          <View className="flex items-center justify-center py-20">
+            <Text className="block text-4xl mb-3">{activeTab === 'my' ? '🤝' : '🔍'}</Text>
+            <Text className="block text-sm text-stone-400">
               {activeTab === 'my' ? '还没有加入圈子，去全部看看吧' : '暂无圈子'}
             </Text>
           </View>

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import Taro from '@tarojs/taro'
 
 interface UserInfo {
   id: string
@@ -17,13 +18,34 @@ interface UserState {
   updateTags: (tags: string[]) => void
 }
 
+const STORAGE_KEY = 'hobby_user_info'
+
+const loadStoredUser = (): UserInfo | null => {
+  try {
+    const raw = Taro.getStorageSync(STORAGE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+const storedUser = loadStoredUser()
+
 export const useUserStore = create<UserState>((set) => ({
-  userInfo: null,
-  isLoggedIn: false,
-  setUserInfo: (info) => set({ userInfo: info, isLoggedIn: true }),
-  clearUserInfo: () => set({ userInfo: null, isLoggedIn: false }),
+  userInfo: storedUser,
+  isLoggedIn: !!storedUser,
+  setUserInfo: (info) => {
+    try { Taro.setStorageSync(STORAGE_KEY, JSON.stringify(info)) } catch {}
+    Taro.setStorageSync('user_id', info.id)
+    set({ userInfo: info, isLoggedIn: true })
+  },
+  clearUserInfo: () => {
+    try { Taro.removeStorageSync(STORAGE_KEY) } catch {}
+    Taro.removeStorageSync('user_id')
+    set({ userInfo: null, isLoggedIn: false })
+  },
   updateTags: (tags) =>
-    set((state) => ({
-      userInfo: state.userInfo ? { ...state.userInfo, interest_tags: tags } : null,
-    })),
+    set((state) => {
+      const updated = state.userInfo ? { ...state.userInfo, interest_tags: tags } : null
+      if (updated) { try { Taro.setStorageSync(STORAGE_KEY, JSON.stringify(updated)) } catch {} }
+      return { userInfo: updated }
+    }),
 }))

@@ -27,7 +27,7 @@ export default function SubmitResource() {
 
   const loadMyCircles = async () => {
     try {
-      const userId = userInfo?.id || Taro.getStorageSync('userId')
+      const userId = userInfo?.id || Taro.getStorageSync('user_id')
       const res = await Network.request({
         url: '/api/users/circles',
         method: 'GET',
@@ -51,7 +51,7 @@ export default function SubmitResource() {
 
     setSubmitting(true)
     try {
-      const userId = userInfo?.id || Taro.getStorageSync('userId')
+      const userId = userInfo?.id || Taro.getStorageSync('user_id')
       const res = await Network.request({
         url: '/api/resources/submissions',
         method: 'POST',

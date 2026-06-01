@@ -1,13 +1,12 @@
 import { View, ScrollView, Text } from '@tarojs/components'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { Network } from '@/network'
+import { useUserStore } from '@/store/user-store'
 import Taro from '@tarojs/taro'
 import { useState, useEffect } from 'react'
-import { Trophy, Image, ListChecks, Users, MessageSquare, MapPin, Clock, DollarSign, ChevronRight, Heart, ThumbsUp, MessageCircle, Plus, Lock } from 'lucide-react-taro'
+import { Trophy, Image, ListChecks, Users, MapPin, Clock, DollarSign, ChevronRight, Heart, ThumbsUp, MessageCircle, Plus, Lock, Sparkles } from 'lucide-react-taro'
 
 interface Circle {
   id: string; name: string; description: string; category: string;
@@ -32,7 +31,12 @@ interface Activity {
   status: string; auto_approve: boolean; nickname: string;
 }
 
+const CATEGORY_EMOJIS: Record<string, string> = {
+  '运动': '🏂', '户外': '🏕️', '文化': '📚', '生活': '☕',
+}
+
 export default function CircleDetail() {
+  const userStoreInfo = useUserStore((s) => s.userInfo)
   const [circle, setCircle] = useState<Circle | null>(null)
   const [isMember, setIsMember] = useState(false)
   const [activeTab, setActiveTab] = useState('resources')
@@ -40,7 +44,7 @@ export default function CircleDetail() {
   const [resourceItems, setResourceItems] = useState<Record<string, any[]>>({})
   const [posts, setPosts] = useState<Post[]>([])
   const [activities, setActivities] = useState<Activity[]>([])
-  const userId = Taro.getStorageSync('user_id') || ''
+  const userId = Taro.getStorageSync('user_id') || userStoreInfo?.id || ''
 
   useEffect(() => {
     const instance = Taro.getCurrentInstance()
@@ -59,7 +63,6 @@ export default function CircleDetail() {
       const resRes = await Network.request({ url: `/api/resources/circle/${id}` })
       if (resRes.data?.data) {
         setResources(resRes.data.data)
-        // Load items for each resource
         const itemsMap: Record<string, any[]> = {}
         for (const rsc of resRes.data.data) {
           try {
@@ -133,50 +136,54 @@ export default function CircleDetail() {
   const renderRanking = (resource: Resource) => {
     const items = resourceItems[resource.id] || []
     return (
-      <Card className="mb-3">
-        <CardContent className="p-4">
-          <View className="flex flex-row items-center gap-2 mb-3">
-            <Trophy size={18} color="#F97316" />
-            <Text className="block text-sm font-semibold text-neutral-900">{resource.title}</Text>
+      <View className="mb-4">
+        <View className="flex flex-row items-center gap-2 mb-3">
+          <View className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center">
+            <Trophy size={16} color="#FFFFFF" />
           </View>
-          {resource.description && (
-            <Text className="block text-xs text-neutral-500 mb-3">{resource.description}</Text>
-          )}
+          <View className="flex-1">
+            <Text className="block text-sm font-bold text-stone-800">{resource.title}</Text>
+            {resource.description && <Text className="block text-xs text-stone-400">{resource.description}</Text>}
+          </View>
+        </View>
+        <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
           {items.length > 0 ? items.map((item: any, idx: number) => (
             <View
               key={item.id || idx}
-              className="flex flex-row items-center py-2 border-b border-neutral-100 last:border-b-0"
+              className="flex flex-row items-center px-4 py-3 border-b border-stone-50 last:border-b-0 active:bg-stone-50"
               onClick={() => Taro.navigateTo({ url: `/pages/item-detail/index?id=${item.id}` })}
             >
               <View className="w-7 flex items-center justify-center">
                 {idx < 3 ? (
-                  <View className={`w-6 h-6 rounded-full flex items-center justify-center ${idx === 0 ? 'bg-yellow-400' : idx === 1 ? 'bg-neutral-300' : 'bg-orange-400'}`}>
+                  <View className={`w-6 h-6 rounded-full flex items-center justify-center ${idx === 0 ? 'bg-amber-400' : idx === 1 ? 'bg-stone-300' : 'bg-orange-300'}`}>
                     <Text className="block text-white text-xs font-bold">{idx + 1}</Text>
                   </View>
                 ) : (
-                  <Text className="block text-sm text-neutral-400 font-medium">{idx + 1}</Text>
+                  <Text className="block text-sm text-stone-300 font-semibold">{idx + 1}</Text>
                 )}
               </View>
-              <View className="flex-1 ml-2">
-                <Text className="block text-sm font-medium text-neutral-800">{item.title}</Text>
-                {item.subtitle && <Text className="block text-xs text-neutral-400">{item.subtitle}</Text>}
+              <View className="flex-1 ml-3">
+                <Text className="block text-sm font-semibold text-stone-700">{item.title}</Text>
+                {item.subtitle && <Text className="block text-xs text-stone-400 mt-1">{item.subtitle}</Text>}
               </View>
               <View className="flex flex-row items-center gap-1">
-                <Heart size={10} color={item.is_liked ? '#ef4444' : '#9ca3af'} filled={item.is_liked} />
-                <Text className="block text-xs text-neutral-500">{item.like_count || 0}</Text>
+                <Heart size={12} color={item.is_liked ? '#ef4444' : '#d6d3d1'} filled={item.is_liked} />
+                <Text className="block text-xs text-stone-400">{item.like_count || 0}</Text>
               </View>
             </View>
           )) : (
-            <Text className="block text-xs text-neutral-400 py-3 text-center">暂无条目</Text>
+            <View className="py-8 flex items-center justify-center">
+              <Text className="block text-xs text-stone-300">暂无条目</Text>
+            </View>
           )}
-          <View className="mt-2" onClick={() => Taro.navigateTo({ url: `/pages/resource-detail/index?id=${resource.id}` })}>
-            <View className="flex flex-row items-center justify-center py-2">
-              <Text className="block text-xs text-orange-500 mr-1">查看全部</Text>
-              <ChevronRight size={12} color="#F97316" />
+          <View className="px-4 py-3 border-t border-stone-50" onClick={() => Taro.navigateTo({ url: `/pages/resource-detail/index?id=${resource.id}` })}>
+            <View className="flex flex-row items-center justify-center gap-1">
+              <Text className="block text-xs text-orange-500 font-medium">查看全部</Text>
+              <ChevronRight size={14} color="#F97316" />
             </View>
           </View>
-        </CardContent>
-      </Card>
+        </View>
+      </View>
     )
   }
 
@@ -184,42 +191,46 @@ export default function CircleDetail() {
   const renderGallery = (resource: Resource) => {
     const items = resourceItems[resource.id] || []
     return (
-      <Card className="mb-3">
-        <CardContent className="p-4">
-          <View className="flex flex-row items-center gap-2 mb-3">
-            <Image size={18} color="#F97316" />
-            <Text className="block text-sm font-semibold text-neutral-900">{resource.title}</Text>
+      <View className="mb-4">
+        <View className="flex flex-row items-center gap-2 mb-3">
+          <View className="w-8 h-8 bg-gradient-to-br from-violet-400 to-purple-500 rounded-lg flex items-center justify-center">
+            <Image size={16} color="#FFFFFF" />
           </View>
-          {resource.description && (
-            <Text className="block text-xs text-neutral-500 mb-3">{resource.description}</Text>
-          )}
+          <View className="flex-1">
+            <Text className="block text-sm font-bold text-stone-800">{resource.title}</Text>
+            {resource.description && <Text className="block text-xs text-stone-400">{resource.description}</Text>}
+          </View>
+        </View>
+        <View className="bg-white rounded-2xl p-4 shadow-sm">
           {items.length > 0 ? (
-            <View className="grid grid-cols-3 gap-2">
+            <View className="grid grid-cols-3 gap-3">
               {items.slice(0, 6).map((item: any, idx: number) => (
                 <View
                   key={item.id || idx}
-                  className="flex flex-col items-center p-2 bg-neutral-50 rounded-lg"
+                  className="flex flex-col items-center"
                   onClick={() => Taro.navigateTo({ url: `/pages/item-detail/index?id=${item.id}` })}
                 >
-                  <View className="w-12 h-12 bg-gradient-to-br from-orange-100 to-amber-50 rounded-lg flex items-center justify-center mb-1">
+                  <View className="w-14 h-14 bg-gradient-to-br from-orange-50 to-amber-100 rounded-2xl flex items-center justify-center mb-2 shadow-sm">
                     <Text className="block text-lg font-bold text-orange-400">{item.title?.charAt(0) || '?'}</Text>
                   </View>
-                  <Text className="block text-xs font-medium text-neutral-800 text-center">{item.title}</Text>
-                  {item.subtitle && <Text className="block text-xs text-neutral-400 text-center">{item.subtitle}</Text>}
+                  <Text className="block text-xs font-medium text-stone-700 text-center">{item.title}</Text>
+                  {item.subtitle && <Text className="block text-xs text-stone-400 text-center">{item.subtitle}</Text>}
                 </View>
               ))}
             </View>
           ) : (
-            <Text className="block text-xs text-neutral-400 py-3 text-center">暂无条目</Text>
+            <View className="py-8 flex items-center justify-center">
+              <Text className="block text-xs text-stone-300">暂无条目</Text>
+            </View>
           )}
-          <View className="mt-2" onClick={() => Taro.navigateTo({ url: `/pages/resource-detail/index?id=${resource.id}` })}>
-            <View className="flex flex-row items-center justify-center py-2">
-              <Text className="block text-xs text-orange-500 mr-1">查看全部</Text>
-              <ChevronRight size={12} color="#F97316" />
+          <View className="mt-3 pt-3 border-t border-stone-50" onClick={() => Taro.navigateTo({ url: `/pages/resource-detail/index?id=${resource.id}` })}>
+            <View className="flex flex-row items-center justify-center gap-1">
+              <Text className="block text-xs text-orange-500 font-medium">查看全部</Text>
+              <ChevronRight size={14} color="#F97316" />
             </View>
           </View>
-        </CardContent>
-      </Card>
+        </View>
+      </View>
     )
   }
 
@@ -227,46 +238,50 @@ export default function CircleDetail() {
   const renderList = (resource: Resource) => {
     const items = resourceItems[resource.id] || []
     return (
-      <Card className="mb-3">
-        <CardContent className="p-4">
-          <View className="flex flex-row items-center gap-2 mb-3">
-            <ListChecks size={18} color="#F97316" />
-            <Text className="block text-sm font-semibold text-neutral-900">{resource.title}</Text>
+      <View className="mb-4">
+        <View className="flex flex-row items-center gap-2 mb-3">
+          <View className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-green-500 rounded-lg flex items-center justify-center">
+            <ListChecks size={16} color="#FFFFFF" />
           </View>
-          {resource.description && (
-            <Text className="block text-xs text-neutral-500 mb-3">{resource.description}</Text>
-          )}
+          <View className="flex-1">
+            <Text className="block text-sm font-bold text-stone-800">{resource.title}</Text>
+            {resource.description && <Text className="block text-xs text-stone-400">{resource.description}</Text>}
+          </View>
+        </View>
+        <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
           {items.length > 0 ? items.map((item: any, idx: number) => (
             <View
               key={item.id || idx}
-              className="flex flex-row items-center py-2 border-b border-neutral-100 last:border-b-0"
+              className="flex flex-row items-center px-4 py-3 border-b border-stone-50 last:border-b-0 active:bg-stone-50"
               onClick={() => Taro.navigateTo({ url: `/pages/item-detail/index?id=${item.id}` })}
             >
               <View className="flex-1">
-                <Text className="block text-sm font-medium text-neutral-800">{item.title}</Text>
-                {item.subtitle && <Text className="block text-xs text-neutral-400">{item.subtitle}</Text>}
+                <Text className="block text-sm font-medium text-stone-700">{item.title}</Text>
+                {item.subtitle && <Text className="block text-xs text-stone-400 mt-1">{item.subtitle}</Text>}
               </View>
               <View className="flex flex-row items-center gap-2">
                 {Array.isArray(item.tags) && item.tags.slice(0, 2).map((tag: string, ti: number) => (
-                  <Badge key={ti} className="bg-orange-50 text-orange-600 text-xs px-1 py-0">{tag}</Badge>
+                  <Badge key={ti} className="bg-orange-50 text-orange-500 border-0" style={{ fontSize: '10px' }}>{tag}</Badge>
                 ))}
-                <View className="flex flex-row items-center gap-0.5">
-                  <Heart size={10} color={item.is_liked ? '#ef4444' : '#9ca3af'} filled={item.is_liked} />
-                  <Text className="block text-xs text-neutral-500">{item.like_count || 0}</Text>
+                <View className="flex flex-row items-center gap-1">
+                  <Heart size={11} color={item.is_liked ? '#ef4444' : '#d6d3d1'} filled={item.is_liked} />
+                  <Text className="block text-xs text-stone-400">{item.like_count || 0}</Text>
                 </View>
               </View>
             </View>
           )) : (
-            <Text className="block text-xs text-neutral-400 py-3 text-center">暂无条目</Text>
+            <View className="py-8 flex items-center justify-center">
+              <Text className="block text-xs text-stone-300">暂无条目</Text>
+            </View>
           )}
-          <View className="mt-2" onClick={() => Taro.navigateTo({ url: `/pages/resource-detail/index?id=${resource.id}` })}>
-            <View className="flex flex-row items-center justify-center py-2">
-              <Text className="block text-xs text-orange-500 mr-1">查看全部</Text>
-              <ChevronRight size={12} color="#F97316" />
+          <View className="px-4 py-3 border-t border-stone-50" onClick={() => Taro.navigateTo({ url: `/pages/resource-detail/index?id=${resource.id}` })}>
+            <View className="flex flex-row items-center justify-center gap-1">
+              <Text className="block text-xs text-orange-500 font-medium">查看全部</Text>
+              <ChevronRight size={14} color="#F97316" />
             </View>
           </View>
-        </CardContent>
-      </Card>
+        </View>
+      </View>
     )
   }
 
@@ -281,78 +296,78 @@ export default function CircleDetail() {
 
   // 未加入圈子的锁定提示
   const renderLockedTab = (tabName: string) => (
-    <View className="flex flex-col items-center justify-center py-20">
-      <View className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
-        <Lock size={28} color="#9ca3af" />
+    <View className="flex flex-col items-center justify-center py-24">
+      <View className="w-20 h-20 bg-stone-100 rounded-3xl flex items-center justify-center mb-5">
+        <Lock size={32} color="#A8A29E" />
       </View>
-      <Text className="block text-base font-medium text-neutral-600 mb-2">加入圈子后可见</Text>
-      <Text className="block text-sm text-neutral-400 mb-4">加入圈子即可查看{tabName}内容</Text>
-      <Button className="bg-orange-500 text-white rounded-xl px-6" onClick={handleJoin}>
-        <Text className="text-white">加入圈子</Text>
+      <Text className="block text-lg font-bold text-stone-600 mb-2">加入圈子后可见</Text>
+      <Text className="block text-sm text-stone-400 mb-6">加入圈子即可查看{tabName}内容</Text>
+      <Button className="bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-full px-8 shadow-lg" onClick={handleJoin}>
+        <Text className="text-white font-medium">加入圈子</Text>
       </Button>
     </View>
   )
 
   const statusMap: Record<string, { label: string; color: string }> = {
-    recruiting: { label: '招募中', color: 'bg-green-50 text-green-600' },
-    full: { label: '已满员', color: 'bg-yellow-50 text-yellow-600' },
+    recruiting: { label: '招募中', color: 'bg-emerald-50 text-emerald-600' },
+    full: { label: '已满员', color: 'bg-amber-50 text-amber-600' },
     cancelled: { label: '已取消', color: 'bg-red-50 text-red-600' },
-    completed: { label: '已完成', color: 'bg-neutral-50 text-neutral-500' },
+    completed: { label: '已完成', color: 'bg-stone-100 text-stone-400' },
   }
 
   if (!circle) {
     return (
-      <View className="flex items-center justify-center h-screen bg-neutral-50">
-        <Text className="block text-neutral-400">加载中...</Text>
+      <View className="flex items-center justify-center h-screen bg-stone-50">
+        <View className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
       </View>
     )
   }
 
   return (
-    <View className="min-h-full bg-neutral-50">
-      {/* Circle Header - 右上角加入/已加入按钮 */}
-      <View className="bg-white px-4 pt-3 pb-4">
-        <View className="flex flex-row items-center gap-3 mb-2">
-          <View className="w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center">
-            <Text className="block text-2xl">{circle.category === '运动' ? '⛷️' : circle.category === '文化' ? '📚' : circle.category === '生活' ? '☕' : '🏕️'}</Text>
+    <View className="min-h-full bg-stone-50">
+      {/* Circle Header with gradient */}
+      <View className="bg-gradient-to-br from-orange-500 via-orange-400 to-amber-400 px-5 pt-4 pb-6">
+        <View className="flex flex-row items-center gap-3">
+          <View className="w-16 h-16 bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white border-opacity-30">
+            <Text className="block text-3xl">{CATEGORY_EMOJIS[circle.category] || '🏔️'}</Text>
           </View>
           <View className="flex-1">
-            <Text className="block text-lg font-bold text-neutral-900">{circle.name}</Text>
-            <Text className="block text-xs text-neutral-400 mt-1">{circle.description}</Text>
+            <Text className="block text-xl font-bold text-white">{circle.name}</Text>
+            <Text className="block text-xs text-orange-100 mt-1">{circle.description}</Text>
           </View>
           {/* 右上角加入/已加入按钮 */}
           {isMember ? (
-            <View className="bg-neutral-100 rounded-lg px-3 py-1 flex items-center" onClick={handleLeave}>
-              <Text className="block text-xs text-neutral-500">已加入</Text>
+            <View className="bg-white bg-opacity-20 backdrop-blur-sm rounded-full px-4 py-2 border border-white border-opacity-30" onClick={handleLeave}>
+              <Text className="block text-xs text-white font-medium">已加入</Text>
             </View>
           ) : (
-            <Button size="sm" className="bg-orange-500 text-white rounded-lg" onClick={handleJoin}>
-              <Text className="text-white text-xs">加入</Text>
+            <Button size="sm" className="bg-white text-orange-500 rounded-full font-bold shadow-sm" onClick={handleJoin}>
+              <Text className="text-orange-500 text-xs font-bold">加入</Text>
             </Button>
           )}
         </View>
-        <View className="flex flex-row items-center gap-4 mt-2">
-          <View className="flex flex-row items-center gap-1">
-            <Users size={14} color="#737373" />
-            <Text className="block text-xs text-neutral-500">{circle.member_count} 成员</Text>
+        <View className="flex flex-row items-center gap-5 mt-4">
+          <View className="flex flex-row items-center gap-2">
+            <Users size={14} color="rgba(255,255,255,0.8)" />
+            <Text className="block text-xs text-orange-100">{circle.member_count} 成员</Text>
           </View>
-          <View className="flex flex-row items-center gap-1">
-            <MessageSquare size={14} color="#737373" />
-            <Text className="block text-xs text-neutral-500">活跃度 {circle.activity_score}</Text>
+          <View className="flex flex-row items-center gap-2">
+            <Sparkles size={14} color="rgba(255,255,255,0.8)" />
+            <Text className="block text-xs text-orange-100">活跃度 {circle.activity_score}</Text>
           </View>
-          <View className="flex flex-row flex-wrap gap-1 ml-auto">
+          <View className="flex flex-row flex-wrap gap-2 ml-auto">
             {circle.tags?.slice(0, 3).map((tag, i) => (
-              <Badge key={i} className="bg-orange-50 text-orange-600 text-xs">{tag}</Badge>
+              <View key={i} className="bg-white bg-opacity-20 rounded-full px-2 py-1 border border-white border-opacity-20">
+                <Text className="block text-white" style={{ fontSize: '10px' }}>{tag}</Text>
+              </View>
             ))}
           </View>
         </View>
       </View>
 
-      <Separator />
-
       {/* Three Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full">
+        <TabsList className="w-full bg-white shadow-sm">
           <TabsTrigger value="resources" className="flex-1">资料库</TabsTrigger>
           <TabsTrigger value="feed" className="flex-1">动态</TabsTrigger>
           <TabsTrigger value="activities" className="flex-1">找搭子</TabsTrigger>
@@ -360,11 +375,11 @@ export default function CircleDetail() {
 
         {/* 资料库 Tab - 所有人可见 */}
         <TabsContent value="resources">
-          <ScrollView scrollY className="px-4 py-3">
+          <ScrollView scrollY className="px-5 py-4">
             {resources.length === 0 ? (
-              <View className="flex flex-col items-center py-16">
-                <Text className="block text-3xl mb-2">📋</Text>
-                <Text className="block text-sm text-neutral-400">暂无资料，管理员可在后台添加模板</Text>
+              <View className="flex flex-col items-center py-20">
+                <Text className="block text-4xl mb-3">📋</Text>
+                <Text className="block text-sm text-stone-400">暂无资料，管理员可在后台添加模板</Text>
               </View>
             ) : (
               resources.sort((a, b) => a.sort_order - b.sort_order).map(rsc => (
@@ -374,58 +389,57 @@ export default function CircleDetail() {
           </ScrollView>
         </TabsContent>
 
-        {/* 动态 Feed Tab - 未加入显示锁定 */}
+        {/* 动态 Feed Tab */}
         <TabsContent value="feed">
           {isMember ? (
             <View className="relative">
-              <ScrollView scrollY className="px-4 py-3" style={{ paddingBottom: '80px' }}>
+              <ScrollView scrollY className="px-5 py-4" style={{ paddingBottom: '80px' }}>
                 {posts.length === 0 ? (
-                  <View className="flex flex-col items-center py-16">
-                    <Text className="block text-3xl mb-2">💬</Text>
-                    <Text className="block text-sm text-neutral-400">暂无动态，来发第一条吧</Text>
+                  <View className="flex flex-col items-center py-20">
+                    <Text className="block text-4xl mb-3">💬</Text>
+                    <Text className="block text-sm text-stone-400">暂无动态，来发第一条吧</Text>
                   </View>
                 ) : posts.map(post => (
-                  <Card key={post.id} className="mb-3">
-                    <CardContent className="p-4">
-                      <View className="flex flex-row items-center gap-2 mb-2">
-                        <View className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                          <Text className="block text-xs">{post.nickname?.charAt(0) || '?'}</Text>
-                        </View>
-                        <View className="flex-1">
-                          <Text className="block text-sm font-medium text-neutral-800">{post.nickname || '用户'}</Text>
-                          <Text className="block text-xs text-neutral-400">{formatDate(post.created_at)}</Text>
-                        </View>
+                  <View key={post.id} className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
+                    <View className="flex flex-row items-center gap-3 mb-3">
+                      <View className="w-9 h-9 bg-gradient-to-br from-orange-400 to-amber-400 rounded-full flex items-center justify-center">
+                        <Text className="block text-white text-xs font-bold">{post.nickname?.charAt(0) || '?'}</Text>
                       </View>
-                      <Text className="block text-sm text-neutral-700 mb-2">{post.content}</Text>
-                      {post.tags?.length > 0 && (
-                        <View className="flex flex-row flex-wrap gap-1 mb-2">
-                          {post.tags.map((tag, i) => (
-                            <Badge key={i} className="bg-orange-50 text-orange-600 text-xs">#{tag}</Badge>
-                          ))}
-                        </View>
-                      )}
-                      <View className="flex flex-row items-center gap-4 mt-2 pt-2 border-t border-neutral-100">
-                        <View className="flex flex-row items-center gap-1" onClick={() => handleLike(post.id)}>
-                          <ThumbsUp size={14} color="#737373" />
-                          <Text className="block text-xs text-neutral-500">{post.like_count}</Text>
-                        </View>
-                        <View className="flex flex-row items-center gap-1" onClick={() => Taro.navigateTo({ url: `/pages/post-detail/index?id=${post.id}` })}>
-                          <MessageCircle size={14} color="#737373" />
-                          <Text className="block text-xs text-neutral-500">{post.comment_count}</Text>
-                        </View>
+                      <View className="flex-1">
+                        <Text className="block text-sm font-semibold text-stone-700">{post.nickname || '用户'}</Text>
+                        <Text className="block text-xs text-stone-400">{formatDate(post.created_at)}</Text>
                       </View>
-                    </CardContent>
-                  </Card>
+                    </View>
+                    <Text className="block text-sm text-stone-600 leading-relaxed mb-3">{post.content}</Text>
+                    {post.tags?.length > 0 && (
+                      <View className="flex flex-row flex-wrap gap-2 mb-3">
+                        {post.tags.map((tag, i) => (
+                          <Badge key={i} className="bg-orange-50 text-orange-500 border-0" style={{ fontSize: '11px' }}>#{tag}</Badge>
+                        ))}
+                      </View>
+                    )}
+                    <View className="flex flex-row items-center gap-5 pt-3 border-t border-stone-100">
+                      <View className="flex flex-row items-center gap-2" onClick={() => handleLike(post.id)}>
+                        <ThumbsUp size={15} color="#A8A29E" />
+                        <Text className="block text-xs text-stone-400">{post.like_count}</Text>
+                      </View>
+                      <View className="flex flex-row items-center gap-2" onClick={() => Taro.navigateTo({ url: `/pages/post-detail/index?id=${post.id}` })}>
+                        <MessageCircle size={15} color="#A8A29E" />
+                        <Text className="block text-xs text-stone-400">{post.comment_count}</Text>
+                      </View>
+                    </View>
+                  </View>
                 ))}
               </ScrollView>
-              {/* 悬浮发布按钮 - 动态Tab */}
+              {/* FAB - 动态Tab */}
               <View
                 style={{
                   position: 'fixed', bottom: 80, right: 16,
-                  width: '48px', height: '48px',
-                  backgroundColor: '#F97316', borderRadius: '24px',
+                  width: '52px', height: '52px',
+                  background: 'linear-gradient(135deg, #F97316, #F59E0B)',
+                  borderRadius: '26px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(249,115,22,0.4)', zIndex: 100
+                  boxShadow: '0 4px 12px rgba(249,115,22,0.4)', zIndex: 100
                 }}
                 onClick={() => Taro.navigateTo({ url: `/pages/publish-post/index?circleId=${circle.id}` })}
               >
@@ -437,57 +451,56 @@ export default function CircleDetail() {
           )}
         </TabsContent>
 
-        {/* 找搭子 Tab - 未加入显示锁定 */}
+        {/* 找搭子 Tab */}
         <TabsContent value="activities">
           {isMember ? (
             <View className="relative">
-              <ScrollView scrollY className="px-4 py-3" style={{ paddingBottom: '80px' }}>
+              <ScrollView scrollY className="px-5 py-4" style={{ paddingBottom: '80px' }}>
                 {activities.length === 0 ? (
-                  <View className="flex flex-col items-center py-16">
-                    <Text className="block text-3xl mb-2">🎯</Text>
-                    <Text className="block text-sm text-neutral-400">暂无活动，来发起第一个吧</Text>
+                  <View className="flex flex-col items-center py-20">
+                    <Text className="block text-4xl mb-3">🎯</Text>
+                    <Text className="block text-sm text-stone-400">暂无活动，来发起第一个吧</Text>
                   </View>
                 ) : activities.map(act => (
-                  <Card key={act.id} className="mb-3" onClick={() => Taro.navigateTo({ url: `/pages/activity-detail/index?id=${act.id}` })}>
-                    <CardContent className="p-4">
-                      <View className="flex flex-row items-start justify-between mb-2">
-                        <Text className="block text-sm font-semibold text-neutral-900 flex-1">{act.title}</Text>
-                        <Badge className={statusMap[act.status]?.color || 'bg-neutral-50 text-neutral-500'}>
-                          {statusMap[act.status]?.label || act.status}
-                        </Badge>
+                  <View key={act.id} className="bg-white rounded-2xl p-4 mb-3 shadow-sm" onClick={() => Taro.navigateTo({ url: `/pages/activity-detail/index?id=${act.id}` })}>
+                    <View className="flex flex-row items-start justify-between mb-3">
+                      <Text className="block text-sm font-bold text-stone-800 flex-1">{act.title}</Text>
+                      <Badge className={statusMap[act.status]?.color || 'bg-stone-100 text-stone-400'}>
+                        {statusMap[act.status]?.label || act.status}
+                      </Badge>
+                    </View>
+                    <View className="gap-2">
+                      <View className="flex flex-row items-center gap-2">
+                        <Clock size={13} color="#A8A29E" />
+                        <Text className="block text-xs text-stone-500">{formatTime(act.activity_time)}</Text>
                       </View>
-                      <View className="space-y-1">
-                        <View className="flex flex-row items-center gap-2">
-                          <Clock size={12} color="#737373" />
-                          <Text className="block text-xs text-neutral-500">{formatTime(act.activity_time)}</Text>
-                        </View>
-                        <View className="flex flex-row items-center gap-2">
-                          <MapPin size={12} color="#737373" />
-                          <Text className="block text-xs text-neutral-500">{act.location}</Text>
-                        </View>
-                        {act.fee_description && (
-                          <View className="flex flex-row items-center gap-2">
-                            <DollarSign size={12} color="#737373" />
-                            <Text className="block text-xs text-neutral-500">{act.fee_description}</Text>
-                          </View>
-                        )}
-                        <View className="flex flex-row items-center gap-2">
-                          <Users size={12} color="#737373" />
-                          <Text className="block text-xs text-neutral-500">{act.current_participants}/{act.max_participants}人</Text>
-                        </View>
+                      <View className="flex flex-row items-center gap-2">
+                        <MapPin size={13} color="#A8A29E" />
+                        <Text className="block text-xs text-stone-500">{act.location}</Text>
                       </View>
-                    </CardContent>
-                  </Card>
+                      {act.fee_description && (
+                        <View className="flex flex-row items-center gap-2">
+                          <DollarSign size={13} color="#A8A29E" />
+                          <Text className="block text-xs text-stone-500">{act.fee_description}</Text>
+                        </View>
+                      )}
+                      <View className="flex flex-row items-center gap-2">
+                        <Users size={13} color="#A8A29E" />
+                        <Text className="block text-xs text-stone-500">{act.current_participants}/{act.max_participants}人</Text>
+                      </View>
+                    </View>
+                  </View>
                 ))}
               </ScrollView>
-              {/* 悬浮发布按钮 - 找搭子Tab */}
+              {/* FAB - 找搭子Tab */}
               <View
                 style={{
                   position: 'fixed', bottom: 80, right: 16,
-                  width: '48px', height: '48px',
-                  backgroundColor: '#F97316', borderRadius: '24px',
+                  width: '52px', height: '52px',
+                  background: 'linear-gradient(135deg, #F97316, #F59E0B)',
+                  borderRadius: '26px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(249,115,22,0.4)', zIndex: 100
+                  boxShadow: '0 4px 12px rgba(249,115,22,0.4)', zIndex: 100
                 }}
                 onClick={() => Taro.navigateTo({ url: `/pages/publish-activity/index?circleId=${circle.id}` })}
               >
@@ -501,10 +514,8 @@ export default function CircleDetail() {
       </Tabs>
 
       {/* 底部免责声明 */}
-      <View className="px-4 py-3 bg-neutral-50 border-t border-neutral-100">
-        <Text className="block text-xs text-neutral-300 text-center">
-          免责声明 | 隐私政策 | 用户协议
-        </Text>
+      <View className="px-5 py-4">
+        <Text className="block text-xs text-stone-300 text-center">免责声明 | 隐私政策 | 用户协议</Text>
       </View>
     </View>
   )

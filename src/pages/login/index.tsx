@@ -9,11 +9,9 @@ export default function Login() {
 
   const handleWechatLogin = async () => {
     try {
-      // 微信小程序一键登录
       const { code } = await Taro.login()
       console.log('Login code:', code)
 
-      // 获取用户信息（微信小程序）
       const isMiniApp = (Taro.getEnv() === Taro.ENV_TYPE.WEAPP || Taro.getEnv() === Taro.ENV_TYPE.TT)
       let nickname = 'Hobby用户'
       let avatarUrl = ''
@@ -28,7 +26,6 @@ export default function Login() {
         }
       }
 
-      // 调用后端登录接口
       const res = await Network.request({
         url: '/api/auth/login',
         method: 'POST',
@@ -54,23 +51,54 @@ export default function Login() {
   }
 
   return (
-    <View className="flex flex-col items-center justify-center h-full px-8 bg-white">
-      <View className="mb-8">
-        <Text className="block text-4xl font-bold text-orange-500">Hobby</Text>
-        <Text className="block text-sm text-neutral-500 mt-2">找到你的兴趣圈子</Text>
+    <View className="flex flex-col h-full" style={{ background: 'linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 50%)' }}>
+      <View className="flex-1 flex flex-col items-center justify-center px-8">
+        {/* Brand */}
+        <View className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6" style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', boxShadow: '0 8px 24px rgba(249,115,22,0.3)' }}>
+          <Text className="text-white text-3xl font-black">H</Text>
+        </View>
+        <Text className="block text-3xl font-black text-neutral-900 tracking-tight">Hobby</Text>
+        <Text className="block text-base text-neutral-400 mt-2">找到你的兴趣圈子</Text>
+
+        {/* Features */}
+        <View className="flex flex-row gap-6 mt-8">
+          <View className="flex flex-col items-center">
+            <View className="w-10 h-10 rounded-xl flex items-center justify-center mb-1" style={{ background: '#FFF7ED' }}>
+              <Text className="text-lg">🎿</Text>
+            </View>
+            <Text className="block text-xs text-neutral-500">滑雪</Text>
+          </View>
+          <View className="flex flex-col items-center">
+            <View className="w-10 h-10 rounded-xl flex items-center justify-center mb-1" style={{ background: '#ECFDF5' }}>
+              <Text className="text-lg">🚴</Text>
+            </View>
+            <Text className="block text-xs text-neutral-500">骑行</Text>
+          </View>
+          <View className="flex flex-col items-center">
+            <View className="w-10 h-10 rounded-xl flex items-center justify-center mb-1" style={{ background: '#EFF6FF' }}>
+              <Text className="text-lg">🏔</Text>
+            </View>
+            <Text className="block text-xs text-neutral-500">户外</Text>
+          </View>
+          <View className="flex flex-col items-center">
+            <View className="w-10 h-10 rounded-xl flex items-center justify-center mb-1" style={{ background: '#FDF2F8' }}>
+              <Text className="text-lg">📸</Text>
+            </View>
+            <Text className="block text-xs text-neutral-500">摄影</Text>
+          </View>
+        </View>
       </View>
 
-      <View className="w-full space-y-3">
+      {/* Bottom CTA */}
+      <View className="px-8 pb-12">
         <Button
-          className="w-full bg-green-500 hover:bg-green-600 text-white rounded-xl py-3"
+          className="w-full rounded-2xl py-4"
+          style={{ background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)', boxShadow: '0 4px 12px rgba(34,197,94,0.3)' }}
           onClick={handleWechatLogin}
         >
-          <Text className="text-white font-medium">微信一键登录</Text>
+          <Text className="text-white font-bold text-base">微信一键登录</Text>
         </Button>
-      </View>
-
-      <View className="mt-8 px-4">
-        <Text className="block text-xs text-neutral-400 text-center">
+        <Text className="block text-xs text-neutral-400 text-center mt-4">
           登录即代表同意《用户协议》和《隐私政策》
         </Text>
       </View>

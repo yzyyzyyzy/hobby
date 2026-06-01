@@ -19,7 +19,7 @@ export default function Notifications() {
   const loadMessages = async () => {
     try {
       setLoading(true)
-      const userId = userInfo?.id || Taro.getStorageSync('userId')
+      const userId = userInfo?.id || Taro.getStorageSync('user_id')
       if (!userId) {
         setLoading(false)
         return
