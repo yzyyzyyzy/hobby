@@ -83,7 +83,7 @@ export default function SearchPage() {
       <View className="px-4 py-3 space-y-3">
         {searched && results.length === 0 ? (
           <View className="flex flex-col items-center py-12">
-            <Text className="block text-3xl mb-2">🔍</Text>
+            <Search size={36} color="#D6D3D1" />
             <Text className="block text-sm text-neutral-400">未找到相关圈子</Text>
           </View>
         ) : (

@@ -31,9 +31,6 @@ interface Activity {
   status: string; auto_approve: boolean; nickname: string;
 }
 
-const CATEGORY_EMOJIS: Record<string, string> = {
-  '运动': '🏂', '户外': '🏕️', '文化': '📚', '生活': '☕',
-}
 
 export default function CircleDetail() {
   const userStoreInfo = useUserStore((s) => s.userInfo)
@@ -329,7 +326,7 @@ export default function CircleDetail() {
       <View className="bg-gradient-to-br from-orange-500 via-orange-400 to-amber-400 px-5 pt-4 pb-6">
         <View className="flex flex-row items-center gap-3">
           <View className="w-16 h-16 bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white border-opacity-30">
-            <Text className="block text-3xl">{CATEGORY_EMOJIS[circle.category] || '🏔️'}</Text>
+            <Text className="block text-3xl">{circle.name[0]}</Text>
           </View>
           <View className="flex-1">
             <Text className="block text-xl font-bold text-white">{circle.name}</Text>
@@ -378,7 +375,7 @@ export default function CircleDetail() {
           <ScrollView scrollY className="px-5 py-4">
             {resources.length === 0 ? (
               <View className="flex flex-col items-center py-20">
-                <Text className="block text-4xl mb-3">📋</Text>
+                <ListChecks size={40} color="#D6D3D1" />
                 <Text className="block text-sm text-stone-400">暂无资料，管理员可在后台添加模板</Text>
               </View>
             ) : (
@@ -396,7 +393,7 @@ export default function CircleDetail() {
               <ScrollView scrollY className="px-5 py-4" style={{ paddingBottom: '80px' }}>
                 {posts.length === 0 ? (
                   <View className="flex flex-col items-center py-20">
-                    <Text className="block text-4xl mb-3">💬</Text>
+                    <MessageCircle size={40} color="#D6D3D1" />
                     <Text className="block text-sm text-stone-400">暂无动态，来发第一条吧</Text>
                   </View>
                 ) : posts.map(post => (
@@ -458,7 +455,7 @@ export default function CircleDetail() {
               <ScrollView scrollY className="px-5 py-4" style={{ paddingBottom: '80px' }}>
                 {activities.length === 0 ? (
                   <View className="flex flex-col items-center py-20">
-                    <Text className="block text-4xl mb-3">🎯</Text>
+                    <Users size={40} color="#D6D3D1" />
                     <Text className="block text-sm text-stone-400">暂无活动，来发起第一个吧</Text>
                   </View>
                 ) : activities.map(act => (

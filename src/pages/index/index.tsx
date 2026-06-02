@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Network } from '@/network'
 import Taro from '@tarojs/taro'
 import { useState, useEffect } from 'react'
-import { Search, Users, Flame } from 'lucide-react-taro'
+import { Search, Users, Flame , Target } from 'lucide-react-taro'
 import { useUserStore } from '@/store/user-store'
 
 interface CircleItem {
@@ -147,7 +147,7 @@ export default function Index() {
                   </View>
                   <View className="flex-1 min-w-0">
                     <Text className="block text-sm font-semibold text-neutral-900">{circle.name}</Text>
-                    <Text className="block text-xs text-neutral-500 mt-1 line-clamp-1">{circle.description}</Text>
+                    <Text className="block text-xs text-neutral-500 mt-1 ">{circle.description}</Text>
                     <View className="flex flex-row items-center gap-3 mt-2">
                       <View className="flex flex-row items-center gap-1">
                         <Users size={12} color="#737373" />
@@ -180,7 +180,7 @@ export default function Index() {
           ))
         ) : (
           <View className="flex flex-col items-center justify-center py-12">
-            <Text className="block text-4xl mb-3">🎯</Text>
+            <Target size={40} color="#D6D3D1" />
             <Text className="block text-sm text-neutral-500">暂无圈子，快来创建一个吧</Text>
           </View>
         )}

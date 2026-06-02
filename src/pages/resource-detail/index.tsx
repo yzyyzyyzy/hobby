@@ -327,7 +327,7 @@ export default function ResourceDetail() {
           <View className="flex items-center py-16"><Text className="text-neutral-400">加载中...</Text></View>
         ) : items.length === 0 ? (
           <View className="flex flex-col items-center py-16">
-            <Text className="block text-3xl mb-2">📋</Text>
+            <ListChecks size={36} color="#D6D3D1" />
             <Text className="block text-sm text-neutral-400">暂无条目数据</Text>
           </View>
         ) : (

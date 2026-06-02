@@ -223,7 +223,7 @@ export default function Profile() {
                   className="py-3 border-b border-stone-50 last:border-0"
                   onClick={() => Taro.navigateTo({ url: `/pages/post-detail/index?id=${p.id}` })}
                 >
-                  <Text className="block text-sm text-stone-600 line-clamp-2">{p.content}</Text>
+                  <Text className="block text-sm text-stone-600 ">{p.content}</Text>
                   <Text className="block text-xs text-stone-400 mt-1">{p.created_at?.slice(0, 10)}</Text>
                 </View>
               ))}

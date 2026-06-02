@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { View, Text } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { Search, Users, Flame, CirclePlus, TrendingUp } from 'lucide-react-taro'
+import { Search, Users, Flame, CirclePlus, TrendingUp, X } from 'lucide-react-taro'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -29,12 +29,6 @@ const CATEGORIES = [
   { key: '生活', label: '生活' },
 ]
 
-const CATEGORY_EMOJIS: Record<string, string> = {
-  '运动': '🏂',
-  '户外': '🏕️',
-  '文化': '📚',
-  '生活': '☕',
-}
 
 export default function Square() {
   const [circles, setCircles] = useState<CircleItem[]>([])
@@ -43,6 +37,7 @@ export default function Square() {
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('all')
+  const [searchExpanded, setSearchExpanded] = useState(false)
   const { userInfo } = useUserStore()
 
   const loadCircles = useCallback(async () => {
@@ -147,29 +142,42 @@ export default function Square() {
 
   return (
     <View className="h-full bg-stone-50">
-      {/* Header with search */}
+      {/* Header */}
       <View className="bg-gradient-to-b from-orange-500 to-orange-400 px-5 pt-4 pb-6">
         <View className="flex flex-row items-center justify-between mb-4">
           <View>
             <Text className="block text-xl font-bold text-white">发现圈子</Text>
             <Text className="block text-xs text-orange-100 mt-1">找到志同道合的伙伴</Text>
           </View>
-          <View onClick={handleCreateCircle} className="bg-white bg-opacity-20 rounded-full px-3 py-2 flex flex-row items-center gap-1">
-            <CirclePlus size={14} color="#FFFFFF" />
-            <Text className="block text-xs text-white font-medium">创建</Text>
+          <View className="flex flex-row items-center gap-2">
+            {/* Search toggle button */}
+            <View
+              style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              onClick={() => { setSearchExpanded(!searchExpanded); if (searchExpanded) { setKeyword(''); loadCircles() } }}
+            >
+              {searchExpanded ? <X size={16} color="#FFFFFF" /> : <Search size={16} color="#FFFFFF" />}
+            </View>
+            <View onClick={handleCreateCircle} style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '20px', paddingLeft: '12px', paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px' }}>
+              <CirclePlus size={14} color="#FFFFFF" />
+              <Text className="block text-xs text-white font-medium">创建</Text>
+            </View>
           </View>
         </View>
-        <View className="bg-white bg-opacity-90 rounded-2xl px-4 py-3 flex flex-row items-center gap-2" onClick={handleSearch}>
-          <Search size={16} color="#A8A29E" />
-          <Input
-            className="flex-1 bg-transparent text-sm text-stone-800"
-            placeholder="搜索圈子、标签..."
-            placeholderClass="text-stone-400"
-            value={keyword}
-            onInput={(e) => setKeyword(e.detail.value)}
-            onConfirm={handleSearch}
-          />
-        </View>
+        {/* Expandable search input */}
+        {searchExpanded && (
+          <View style={{ backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '16px', padding: '12px 16px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
+            <Search size={16} color="#A8A29E" />
+            <Input
+              style={{ flex: 1, backgroundColor: "transparent", fontSize: "14px", color: "#292524" }}
+              placeholder="搜索圈子、标签..."
+              placeholderClass="text-stone-400"
+              value={keyword}
+              onInput={(e) => setKeyword(e.detail.value)}
+              onConfirm={handleSearch}
+              autoFocus
+            />
+          </View>
+        )}
       </View>
 
       {/* Category pills */}
@@ -186,7 +194,7 @@ export default function Square() {
       </View>
 
       {/* All / My toggle */}
-      <View className="px-5 pb-3 flex flex-row items-center gap-1">
+      <View className="px-5 pb-3 flex flex-row items-center gap-2">
         <View
           className={`rounded-full px-4 py-2 ${activeTab === 'all' ? 'bg-stone-800' : 'bg-white'}`}
           onClick={() => setActiveTab('all')}
@@ -208,72 +216,75 @@ export default function Square() {
             <View className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
           </View>
         ) : displayCircles.length > 0 ? (
-          displayCircles.map((circle, index) => (
-            <View key={circle.id} className="mb-3">
-              <View
-                className="bg-white rounded-2xl overflow-hidden shadow-sm"
-                onClick={() => Taro.navigateTo({ url: `/pages/circle-detail/index?id=${circle.id}` })}
-              >
-                {/* Top accent line for visual interest */}
-                <View className="h-1 bg-gradient-to-r from-orange-400 to-amber-300" />
-                <View className="p-4">
-                  <View className="flex flex-row gap-3">
-                    {/* Circle avatar */}
-                    <View className="w-14 h-14 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl flex items-center justify-center flex-shrink-0 border border-orange-100">
-                      <Text className="block text-xl">{CATEGORY_EMOJIS[circle.category] || circle.name[0]}</Text>
-                    </View>
-                    {/* Info */}
-                    <View className="flex-1 min-w-0">
-                      <View className="flex flex-row items-center gap-2">
-                        <Text className="block text-base font-bold text-stone-800">{circle.name}</Text>
-                        {index < 3 && activeTab === 'all' && (
-                          <View className="bg-orange-50 rounded-full px-2 py-1 flex flex-row items-center gap-1">
-                            <TrendingUp size={10} color="#F97316" />
-                            <Text className="block text-orange-500" style={{ fontSize: '10px' }}>热门</Text>
+          displayCircles.map((circle, index) => {
+            const catColor = { bg: 'bg-stone-50', text: 'text-stone-500', icon: 'border-stone-200' }
+            return (
+              <View key={circle.id} className="mb-3">
+                <View
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm"
+                  onClick={() => Taro.navigateTo({ url: `/pages/circle-detail/index?id=${circle.id}` })}
+                >
+                  {/* Top accent line */}
+                  <View className="h-1 bg-gradient-to-r from-orange-400 to-amber-300" />
+                  <View className="p-4">
+                    <View className="flex flex-row gap-3">
+                      {/* Circle avatar with first character */}
+                      <View className={`w-14 h-14 ${catColor.bg} rounded-2xl flex items-center justify-center flex-shrink-0 border ${catColor.icon}`}>
+                        <Text className={`block text-lg font-bold ${catColor.text}`}>{circle.name[0]}</Text>
+                      </View>
+                      {/* Info */}
+                      <View className="flex-1 min-w-0">
+                        <View className="flex flex-row items-center gap-2">
+                          <Text className="block text-base font-bold text-stone-800">{circle.name}</Text>
+                          {index < 3 && activeTab === 'all' && (
+                            <View className="bg-orange-50 rounded-full px-2 py-1 flex flex-row items-center gap-1">
+                              <TrendingUp size={10} color="#F97316" />
+                              <Text className="block text-orange-500" style={{ fontSize: '10px' }}>热门</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text className="block text-xs text-stone-400 mt-1" style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{circle.description}</Text>
+                        <View className="flex flex-row items-center gap-3 mt-2">
+                          <View className="flex flex-row items-center gap-1">
+                            <Users size={11} color="#A8A29E" />
+                            <Text className="block text-stone-400" style={{ fontSize: '11px' }}>{circle.member_count}人</Text>
                           </View>
+                          <View className="flex flex-row items-center gap-1">
+                            <Flame size={11} color="#FB923C" />
+                            <Text className="block text-orange-400" style={{ fontSize: '11px' }}>{circle.activity_score}</Text>
+                          </View>
+                          <Badge variant="outline" className="border-orange-200 text-orange-500" style={{ fontSize: '10px' }}>{circle.category}</Badge>
+                        </View>
+                      </View>
+                      {/* Join button */}
+                      <View className="flex items-center flex-shrink-0 self-center">
+                        {circle.is_joined ? (
+                          <View className="bg-stone-100 rounded-full px-3 py-2">
+                            <Text className="block text-stone-400 text-xs font-medium">已加入</Text>
+                          </View>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="bg-orange-500 hover:bg-orange-600 text-white rounded-full px-4 shadow-sm"
+                            onClick={(e) => {
+                              e.stopPropagation && e.stopPropagation()
+                              handleJoinCircle(circle.id, circle.is_joined)
+                            }}
+                          >
+                            <Text className="text-white text-xs font-medium">加入</Text>
+                          </Button>
                         )}
                       </View>
-                      <Text className="block text-xs text-stone-400 mt-1 line-clamp-1">{circle.description}</Text>
-                      <View className="flex flex-row items-center gap-3 mt-2">
-                        <View className="flex flex-row items-center gap-1">
-                          <Users size={11} color="#A8A29E" />
-                          <Text className="block text-stone-400" style={{ fontSize: '11px' }}>{circle.member_count}人</Text>
-                        </View>
-                        <View className="flex flex-row items-center gap-1">
-                          <Flame size={11} color="#FB923C" />
-                          <Text className="block text-orange-400" style={{ fontSize: '11px' }}>{circle.activity_score}</Text>
-                        </View>
-                        <Badge variant="outline" className="border-orange-200 text-orange-500" style={{ fontSize: '10px' }}>{circle.category}</Badge>
-                      </View>
-                    </View>
-                    {/* Join button */}
-                    <View className="flex items-center flex-shrink-0 self-center">
-                      {circle.is_joined ? (
-                        <View className="bg-stone-100 rounded-full px-3 py-2">
-                          <Text className="block text-stone-400 text-xs font-medium">已加入</Text>
-                        </View>
-                      ) : (
-                        <Button
-                          size="sm"
-                          className="bg-orange-500 hover:bg-orange-600 text-white rounded-full px-4 shadow-sm"
-                          onClick={(e) => {
-                            e.stopPropagation && e.stopPropagation()
-                            handleJoinCircle(circle.id, circle.is_joined)
-                          }}
-                        >
-                          <Text className="text-white text-xs font-medium">加入</Text>
-                        </Button>
-                      )}
                     </View>
                   </View>
                 </View>
               </View>
-            </View>
-          ))
+            )
+          })
         ) : (
-          <View className="flex items-center justify-center py-20">
-            <Text className="block text-4xl mb-3">{activeTab === 'my' ? '🤝' : '🔍'}</Text>
-            <Text className="block text-sm text-stone-400">
+          <View className="flex flex-col items-center justify-center py-20">
+            <Users size={40} color="#D6D3D1" />
+            <Text className="block text-sm text-stone-400 mt-3">
               {activeTab === 'my' ? '还没有加入圈子，去全部看看吧' : '暂无圈子'}
             </Text>
           </View>

@@ -1,5 +1,6 @@
 import { View, Text } from '@tarojs/components'
 import Taro from '@tarojs/taro'
+import { Card, CardContent } from '@/components/ui/card'
 import { PenLine, Users, BookPlus } from 'lucide-react-taro'
 
 const features = [
@@ -8,7 +9,8 @@ const features = [
     title: '发布动态',
     desc: '分享图文动态，记录精彩瞬间',
     icon: PenLine,
-    gradient: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+    color: '#F97316',
+    bg: '#FFF7ED',
     path: '/pages/publish-post/index'
   },
   {
@@ -16,7 +18,8 @@ const features = [
     title: '找搭子',
     desc: '发起活动，找到志同道合的伙伴',
     icon: Users,
-    gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+    color: '#10B981',
+    bg: '#ECFDF5',
     path: '/pages/publish-activity/index'
   },
   {
@@ -24,7 +27,8 @@ const features = [
     title: '补充资料',
     desc: '为圈子资料库贡献内容',
     icon: BookPlus,
-    gradient: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+    color: '#6366F1',
+    bg: '#EEF2FF',
     path: '/pages/submit-resource/index'
   }
 ]
@@ -35,34 +39,25 @@ export default function Publish() {
   }
 
   return (
-    <View className="h-full bg-neutral-50">
-      {/* Header */}
-      <View className="px-5 pt-6 pb-4">
-        <Text className="block text-2xl font-bold text-neutral-900">发布</Text>
-        <Text className="block text-sm text-neutral-400 mt-1">选择你要发布的内容类型</Text>
-      </View>
+    <View className="h-full bg-neutral-50 p-4">
+      <Text className="block text-xl font-bold text-neutral-900 mb-2">发布</Text>
+      <Text className="block text-sm text-neutral-500 mb-6">选择要发布的内容类型</Text>
 
-      {/* Cards */}
-      <View className="px-5 gap-4">
-        {features.map((f) => {
+      <View className="gap-3">
+        {features.map(f => {
           const IconComp = f.icon
           return (
-            <View
-              key={f.key}
-              className="rounded-2xl overflow-hidden mb-4"
-              style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-              onClick={() => handleNavigate(f.path)}
-            >
-              <View className="p-5 flex flex-row items-center" style={{ background: f.gradient }}>
-                <View className="w-14 h-14 rounded-2xl flex items-center justify-center mr-4" style={{ background: 'rgba(255,255,255,0.2)' }}>
-                  <IconComp size={28} color="#fff" />
+            <Card key={f.key} onClick={() => handleNavigate(f.path)} className="mb-3">
+              <CardContent className="p-4 flex flex-row items-center gap-4">
+                <View className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: f.bg }}>
+                  <IconComp size={24} color={f.color} />
                 </View>
                 <View className="flex-1">
-                  <Text className="block text-lg font-bold text-white">{f.title}</Text>
-                  <Text className="block text-sm mt-1" style={{ color: 'rgba(255,255,255,0.8)' }}>{f.desc}</Text>
+                  <Text className="block text-base font-semibold text-neutral-900">{f.title}</Text>
+                  <Text className="block text-xs text-neutral-500 mt-1">{f.desc}</Text>
                 </View>
-              </View>
-            </View>
+              </CardContent>
+            </Card>
           )
         })}
       </View>

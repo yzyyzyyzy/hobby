@@ -44,9 +44,9 @@ interface Stats {
 }
 
 const TEMPLATE_TYPES: Record<string, { label: string; icon: string }> = {
-  ranking: { label: '排行榜', icon: '🏆' },
-  gallery: { label: '图集', icon: '🖼️' },
-  list: { label: '列表', icon: '📋' },
+  ranking: { label: '排行榜', icon: "🏆" },
+  gallery: { label: '图集', icon: "🖼️" },
+  list: { label: '列表', icon: "📋" },
 }
 
 const CATEGORIES = ['运动', '户外', '文化', '生活']
@@ -299,7 +299,7 @@ export default function AdminPage() {
                 { label: '圈子', value: stats?.circle_count || 0, icon: '🏂' },
                 { label: '用户', value: stats?.user_count || 0, icon: '👥' },
                 { label: '帖子', value: stats?.post_count || 0, icon: '📝' },
-                { label: '待审批', value: stats?.pending_application_count || 0, icon: '📋' },
+                { label: '待审批', value: stats?.pending_application_count || 0, icon: "📋" },
                 { label: '待举报', value: stats?.pending_report_count || 0, icon: '⚠️' },
                 { label: '资料模板', value: stats?.resource_count || 0, icon: '📚' },
               ].map((s, i) => (

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import Taro from '@tarojs/taro'
 import { useUserStore } from '@/store/user-store'
 import { Network } from '@/network'
+import { Snowflake, Bike, Mountain, Camera } from 'lucide-react-taro'
 
 export default function Login() {
   const setUserInfo = useUserStore((s) => s.setUserInfo)
@@ -64,25 +65,25 @@ export default function Login() {
         <View className="flex flex-row gap-6 mt-8">
           <View className="flex flex-col items-center">
             <View className="w-10 h-10 rounded-xl flex items-center justify-center mb-1" style={{ background: '#FFF7ED' }}>
-              <Text className="text-lg">🎿</Text>
+              <Snowflake size={18} color="white" />
             </View>
             <Text className="block text-xs text-neutral-500">滑雪</Text>
           </View>
           <View className="flex flex-col items-center">
             <View className="w-10 h-10 rounded-xl flex items-center justify-center mb-1" style={{ background: '#ECFDF5' }}>
-              <Text className="text-lg">🚴</Text>
+              <Bike size={18} color="white" />
             </View>
             <Text className="block text-xs text-neutral-500">骑行</Text>
           </View>
           <View className="flex flex-col items-center">
             <View className="w-10 h-10 rounded-xl flex items-center justify-center mb-1" style={{ background: '#EFF6FF' }}>
-              <Text className="text-lg">🏔</Text>
+              <Mountain size={18} color="white" />
             </View>
             <Text className="block text-xs text-neutral-500">户外</Text>
           </View>
           <View className="flex flex-col items-center">
             <View className="w-10 h-10 rounded-xl flex items-center justify-center mb-1" style={{ background: '#FDF2F8' }}>
-              <Text className="text-lg">📸</Text>
+              <Camera size={18} color="white" />
             </View>
             <Text className="block text-xs text-neutral-500">摄影</Text>
           </View>
