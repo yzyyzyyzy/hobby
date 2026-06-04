@@ -325,8 +325,8 @@ export default function CircleDetail() {
       {/* Circle Header with gradient */}
       <View className="bg-gradient-to-br from-orange-500 via-orange-400 to-amber-400 px-5 pt-4 pb-6">
         <View className="flex flex-row items-center gap-3">
-          <View className="w-16 h-16 bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white border-opacity-30">
-            <Text className="block text-3xl">{circle.name[0]}</Text>
+          <View className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+            <Text className="block text-3xl text-orange-500 font-bold">{circle.name[0]}</Text>
           </View>
           <View className="flex-1">
             <Text className="block text-xl font-bold text-white">{circle.name}</Text>
@@ -354,8 +354,8 @@ export default function CircleDetail() {
           </View>
           <View className="flex flex-row flex-wrap gap-2 ml-auto">
             {circle.tags?.slice(0, 3).map((tag, i) => (
-              <View key={i} className="bg-white bg-opacity-20 rounded-full px-2 py-1 border border-white border-opacity-20">
-                <Text className="block text-white" style={{ fontSize: '10px' }}>{tag}</Text>
+              <View key={i} className="rounded-full px-2 py-1" style={{ backgroundColor: 'rgba(255,255,255,0.35)' }}>
+                <Text className="block" style={{ fontSize: '10px', color: '#FFFFFF' }}>{tag}</Text>
               </View>
             ))}
           </View>
