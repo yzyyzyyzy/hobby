@@ -1,11 +1,9 @@
 import { useState, useCallback, useEffect } from 'react'
-import { View, Text } from '@tarojs/components'
+import { View, Text, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { Search, Users, Flame, CirclePlus, TrendingUp, X } from 'lucide-react-taro'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Network } from '@/network'
 import { useUserStore } from '@/store/user-store'
 
@@ -28,7 +26,6 @@ const CATEGORIES = [
   { key: '文化', label: '文化' },
   { key: '生活', label: '生活' },
 ]
-
 
 export default function Square() {
   const [circles, setCircles] = useState<CircleItem[]>([])
@@ -142,22 +139,22 @@ export default function Square() {
 
   return (
     <View className="h-full bg-stone-50">
-      {/* Header */}
-      <View className="bg-gradient-to-b from-orange-500 to-orange-400 px-5 pt-4 pb-6">
-        <View className="flex flex-row items-center justify-between mb-4">
+      {/* Header - unified gradient style */}
+      <View style={{ background: 'linear-gradient(to bottom, #F97316, #EA580C)', paddingLeft: '20px', paddingRight: '20px', paddingTop: '16px', paddingBottom: '24px' }}>
+        <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <View>
-            <Text className="block text-xl font-bold text-white">发现圈子</Text>
+            <Text className="block text-xl font-bold text-white">圈子</Text>
             <Text className="block text-xs text-orange-100 mt-1">找到志同道合的伙伴</Text>
           </View>
-          <View className="flex flex-row items-center gap-2">
+          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
             {/* Search toggle button */}
             <View
-              style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: '20px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               onClick={() => { setSearchExpanded(!searchExpanded); if (searchExpanded) { setKeyword(''); loadCircles() } }}
             >
               {searchExpanded ? <X size={16} color="#FFFFFF" /> : <Search size={16} color="#FFFFFF" />}
             </View>
-            <View onClick={handleCreateCircle} style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '20px', paddingLeft: '12px', paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px' }}>
+            <View onClick={handleCreateCircle} style={{ backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: '20px', paddingLeft: '12px', paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px' }}>
               <CirclePlus size={14} color="#FFFFFF" />
               <Text className="block text-xs text-white font-medium">创建</Text>
             </View>
@@ -165,10 +162,10 @@ export default function Square() {
         </View>
         {/* Expandable search input */}
         {searchExpanded && (
-          <View style={{ backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '16px', padding: '12px 16px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
             <Search size={16} color="#A8A29E" />
             <Input
-              style={{ flex: 1, backgroundColor: "transparent", fontSize: "14px", color: "#292524" }}
+              style={{ flex: 1, backgroundColor: 'transparent', fontSize: '14px', color: '#292524' }}
               placeholder="搜索圈子、标签..."
               placeholderClass="text-stone-400"
               value={keyword}
@@ -180,87 +177,100 @@ export default function Square() {
         )}
       </View>
 
-      {/* Category pills */}
-      <View className="px-5 py-3">
-        <Tabs defaultValue="all" value={category} onValueChange={(v) => setCategory(v as string)}>
-          <TabsList className="w-full bg-transparent gap-2">
-            {CATEGORIES.map((cat) => (
-              <TabsTrigger key={cat.key} value={cat.key} className="flex-1 data-[state=active]:bg-orange-500 data-[state=active]:text-white rounded-full bg-white text-stone-600 shadow-sm">
-                {cat.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+      {/* Category pills - using inline styles for mini-program compatibility */}
+      <View style={{ paddingLeft: '20px', paddingRight: '20px', paddingTop: '12px', paddingBottom: '12px', display: 'flex', flexDirection: 'row', gap: '8px' }}>
+        {CATEGORIES.map((cat) => (
+          <View
+            key={cat.key}
+            onClick={() => setCategory(cat.key)}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingTop: '8px',
+              paddingBottom: '8px',
+              borderRadius: '20px',
+              backgroundColor: category === cat.key ? '#F97316' : '#FFFFFF',
+              boxShadow: category !== cat.key ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+            }}
+          >
+            <Text style={{ fontSize: '13px', fontWeight: category === cat.key ? '600' : '400', color: category === cat.key ? '#FFFFFF' : '#57534E' }}>
+              {cat.label}
+            </Text>
+          </View>
+        ))}
       </View>
 
       {/* All / My toggle */}
-      <View className="px-5 pb-3 flex flex-row items-center gap-2">
+      <View style={{ paddingLeft: '20px', paddingRight: '20px', paddingBottom: '12px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
         <View
-          className={`rounded-full px-4 py-2 ${activeTab === 'all' ? 'bg-stone-800' : 'bg-white'}`}
+          style={{ borderRadius: '20px', paddingLeft: '16px', paddingRight: '16px', paddingTop: '8px', paddingBottom: '8px', backgroundColor: activeTab === 'all' ? '#292524' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setActiveTab('all')}
         >
-          <Text className={`block text-sm font-medium ${activeTab === 'all' ? 'text-white' : 'text-stone-500'}`}>全部</Text>
+          <Text style={{ fontSize: '13px', fontWeight: '500', color: activeTab === 'all' ? '#FFFFFF' : '#78716C' }}>全部</Text>
         </View>
         <View
-          className={`rounded-full px-4 py-2 ${activeTab === 'my' ? 'bg-stone-800' : 'bg-white'}`}
+          style={{ borderRadius: '20px', paddingLeft: '16px', paddingRight: '16px', paddingTop: '8px', paddingBottom: '8px', backgroundColor: activeTab === 'my' ? '#292524' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setActiveTab('my')}
         >
-          <Text className={`block text-sm font-medium ${activeTab === 'my' ? 'text-white' : 'text-stone-500'}`}>我的{myCircles.length > 0 ? ` ${myCircles.length}` : ''}</Text>
+          <Text style={{ fontSize: '13px', fontWeight: '500', color: activeTab === 'my' ? '#FFFFFF' : '#78716C' }}>我的{myCircles.length > 0 ? ` ${myCircles.length}` : ''}</Text>
         </View>
       </View>
 
       {/* Circle list */}
-      <View className="px-5 gap-3 pb-4">
-        {loading ? (
-          <View className="flex items-center justify-center py-16">
-            <View className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-          </View>
-        ) : displayCircles.length > 0 ? (
-          displayCircles.map((circle, index) => {
-            const catColor = { bg: 'bg-stone-50', text: 'text-stone-500', icon: 'border-stone-200' }
-            return (
-              <View key={circle.id} className="mb-3">
+      <ScrollView scrollY style={{ flex: 1 }}>
+        <View style={{ paddingLeft: '20px', paddingRight: '20px', paddingBottom: '16px' }}>
+          {loading ? (
+            <View style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: '64px' }}>
+              <View className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            </View>
+          ) : displayCircles.length > 0 ? (
+            displayCircles.map((circle, index) => (
+              <View key={circle.id} style={{ marginBottom: '12px' }}>
                 <View
-                  className="bg-white rounded-2xl overflow-hidden shadow-sm"
+                  style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
                   onClick={() => Taro.navigateTo({ url: `/pages/circle-detail/index?id=${circle.id}` })}
                 >
                   {/* Top accent line */}
-                  <View className="h-1 bg-gradient-to-r from-orange-400 to-amber-300" />
-                  <View className="p-4">
-                    <View className="flex flex-row gap-3">
+                  <View style={{ height: '3px', background: 'linear-gradient(to right, #FB923C, #FCD34D)' }} />
+                  <View style={{ padding: '16px' }}>
+                    <View style={{ display: 'flex', flexDirection: 'row', gap: '12px' }}>
                       {/* Circle avatar with first character */}
-                      <View className={`w-14 h-14 ${catColor.bg} rounded-2xl flex items-center justify-center flex-shrink-0 border ${catColor.icon}`}>
-                        <Text className={`block text-lg font-bold ${catColor.text}`}>{circle.name[0]}</Text>
+                      <View style={{ width: '56px', height: '56px', backgroundColor: '#F5F5F4', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderWidth: '1px', borderColor: '#E7E5E4' }}>
+                        <Text style={{ fontSize: '18px', fontWeight: '700', color: '#78716C' }}>{circle.name[0]}</Text>
                       </View>
                       {/* Info */}
-                      <View className="flex-1 min-w-0">
-                        <View className="flex flex-row items-center gap-2">
-                          <Text className="block text-base font-bold text-stone-800">{circle.name}</Text>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '6px' }}>
+                          <Text style={{ fontSize: '15px', fontWeight: '700', color: '#292524' }}>{circle.name}</Text>
                           {index < 3 && activeTab === 'all' && (
-                            <View className="bg-orange-50 rounded-full px-2 py-1 flex flex-row items-center gap-1">
+                            <View style={{ backgroundColor: '#FFF7ED', borderRadius: '10px', paddingLeft: '8px', paddingRight: '8px', paddingTop: '2px', paddingBottom: '2px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '3px' }}>
                               <TrendingUp size={10} color="#F97316" />
-                              <Text className="block text-orange-500" style={{ fontSize: '10px' }}>热门</Text>
+                              <Text style={{ fontSize: '10px', color: '#F97316' }}>热门</Text>
                             </View>
                           )}
                         </View>
-                        <Text className="block text-xs text-stone-400 mt-1" style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{circle.description}</Text>
-                        <View className="flex flex-row items-center gap-3 mt-2">
-                          <View className="flex flex-row items-center gap-1">
+                        <Text style={{ fontSize: '12px', color: '#A8A29E', marginTop: '4px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{circle.description}</Text>
+                        <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
+                          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '3px' }}>
                             <Users size={11} color="#A8A29E" />
-                            <Text className="block text-stone-400" style={{ fontSize: '11px' }}>{circle.member_count}人</Text>
+                            <Text style={{ fontSize: '11px', color: '#A8A29E' }}>{circle.member_count}人</Text>
                           </View>
-                          <View className="flex flex-row items-center gap-1">
+                          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '3px' }}>
                             <Flame size={11} color="#FB923C" />
-                            <Text className="block text-orange-400" style={{ fontSize: '11px' }}>{circle.activity_score}</Text>
+                            <Text style={{ fontSize: '11px', color: '#FB923C' }}>{circle.activity_score}</Text>
                           </View>
-                          <Badge variant="outline" className="border-orange-200 text-orange-500" style={{ fontSize: '10px' }}>{circle.category}</Badge>
+                          <View style={{ borderRadius: '10px', paddingLeft: '8px', paddingRight: '8px', paddingTop: '2px', paddingBottom: '2px', borderWidth: '1px', borderColor: '#FED7AA', backgroundColor: '#FFFFFF' }}>
+                            <Text style={{ fontSize: '10px', color: '#F97316' }}>{circle.category}</Text>
+                          </View>
                         </View>
                       </View>
                       {/* Join button */}
-                      <View className="flex items-center flex-shrink-0 self-center">
+                      <View style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         {circle.is_joined ? (
-                          <View className="bg-stone-100 rounded-full px-3 py-2">
-                            <Text className="block text-stone-400 text-xs font-medium">已加入</Text>
+                          <View style={{ backgroundColor: '#F5F5F4', borderRadius: '20px', paddingLeft: '12px', paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px' }}>
+                            <Text style={{ fontSize: '12px', color: '#A8A29E', fontWeight: '500' }}>已加入</Text>
                           </View>
                         ) : (
                           <Button
@@ -279,17 +289,17 @@ export default function Square() {
                   </View>
                 </View>
               </View>
-            )
-          })
-        ) : (
-          <View className="flex flex-col items-center justify-center py-20">
-            <Users size={40} color="#D6D3D1" />
-            <Text className="block text-sm text-stone-400 mt-3">
-              {activeTab === 'my' ? '还没有加入圈子，去全部看看吧' : '暂无圈子'}
-            </Text>
-          </View>
-        )}
-      </View>
+            ))
+          ) : (
+            <View style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: '80px' }}>
+              <Users size={40} color="#D6D3D1" />
+              <Text style={{ fontSize: '14px', color: '#A8A29E', marginTop: '12px' }}>
+                {activeTab === 'my' ? '还没有加入圈子，去全部看看吧' : '暂无圈子'}
+              </Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </View>
   )
 }

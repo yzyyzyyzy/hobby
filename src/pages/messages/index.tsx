@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Network } from '@/network'
 import { useUserStore } from '@/store/user-store'
-import { Heart, MessageCircle, ChevronRight, TrendingUp, Flame } from 'lucide-react-taro'
+import { Heart, MessageCircle, ChevronRight, TrendingUp, Flame, CirclePlus } from 'lucide-react-taro'
 
 export default function FeedSquare() {
   const { userInfo } = useUserStore()
@@ -43,6 +42,15 @@ export default function FeedSquare() {
     Taro.navigateTo({ url: `/pages/post-detail/index?id=${postId}` })
   }
 
+  const goToPublish = () => {
+    if (!userInfo?.id) {
+      Taro.showToast({ title: '请先登录', icon: 'none' })
+      Taro.navigateTo({ url: '/pages/login/index' })
+      return
+    }
+    Taro.navigateTo({ url: '/pages/publish-post/index' })
+  }
+
   const formatTime = (timeStr: string) => {
     const date = new Date(timeStr)
     const now = new Date()
@@ -58,15 +66,16 @@ export default function FeedSquare() {
 
   if (loading) {
     return (
-      <View className="flex flex-col min-h-screen bg-stone-50">
-        <View className="bg-gradient-to-br from-orange-500 to-amber-400 px-5 pt-6 pb-8">
-          <View className="flex flex-row items-center gap-2">
-            <Flame size={24} color="#FFFFFF" />
-            <Text className="block text-xl font-bold text-white">动态广场</Text>
+      <View className="h-full bg-stone-50">
+        <View style={{ background: 'linear-gradient(to bottom, #F97316, #EA580C)', paddingLeft: '20px', paddingRight: '20px', paddingTop: '16px', paddingBottom: '24px' }}>
+          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View>
+              <Text className="block text-xl font-bold text-white">动态</Text>
+              <Text className="block text-xs text-orange-100 mt-1">圈子精选，按热度排序</Text>
+            </View>
           </View>
-          <Text className="block text-sm text-orange-100 mt-1">近一周圈子精选动态</Text>
         </View>
-        <View className="px-5 -mt-4">
+        <View style={{ paddingLeft: '20px', paddingRight: '20px', marginTop: '-16px' }}>
           {[1, 2, 3].map(i => (
             <View key={i} className="mb-3 bg-white rounded-2xl overflow-hidden shadow-sm">
               <Skeleton className="h-36 w-full" />
@@ -78,27 +87,32 @@ export default function FeedSquare() {
   }
 
   return (
-    <View className="flex flex-col min-h-screen bg-stone-50">
-      {/* Header with gradient */}
-      <View className="bg-gradient-to-br from-orange-500 to-amber-400 px-5 pt-6 pb-8">
-        <View className="flex flex-row items-center gap-2">
-          <Flame size={24} color="#FFFFFF" />
-          <Text className="block text-xl font-bold text-white">动态广场</Text>
+    <View className="h-full bg-stone-50">
+      {/* Header - same style as 圈子 page */}
+      <View style={{ background: 'linear-gradient(to bottom, #F97316, #EA580C)', paddingLeft: '20px', paddingRight: '20px', paddingTop: '16px', paddingBottom: '24px' }}>
+        <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View>
+            <Text className="block text-xl font-bold text-white">动态</Text>
+            <Text className="block text-xs text-orange-100 mt-1">近一周圈子精选动态</Text>
+          </View>
+          <View onClick={goToPublish} style={{ backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: '20px', paddingLeft: '12px', paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px' }}>
+            <CirclePlus size={14} color="#FFFFFF" />
+            <Text className="block text-xs text-white font-medium">发布</Text>
+          </View>
         </View>
-        <Text className="block text-sm text-orange-100 mt-1">近一周圈子精选动态，按热度排序</Text>
       </View>
 
       {/* Post List */}
       {posts.length === 0 ? (
-        <View className="flex flex-col items-center justify-center py-24 px-5">
-          <View className="w-20 h-20 bg-stone-100 rounded-3xl flex items-center justify-center mb-5">
+        <View style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: '96px', paddingLeft: '20px', paddingRight: '20px' }}>
+          <View style={{ width: '80px', height: '80px', backgroundColor: '#F5F5F4', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
             <TrendingUp size={32} color="#D6D3D1" />
           </View>
-          <Text className="block text-base font-semibold text-stone-500 mb-2">暂无精选动态</Text>
-          <Text className="block text-sm text-stone-400 text-center">加入圈子后，精彩动态将出现在这里</Text>
+          <Text style={{ fontSize: '15px', fontWeight: '600', color: '#78716C', marginBottom: '8px' }}>暂无精选动态</Text>
+          <Text style={{ fontSize: '13px', color: '#A8A29E', textAlign: 'center' }}>加入圈子后，精彩动态将出现在这里</Text>
         </View>
       ) : (
-        <ScrollView scrollY className="px-5 -mt-4 pb-4">
+        <ScrollView scrollY style={{ flex: 1, paddingLeft: '20px', paddingRight: '20px', marginTop: '-16px', paddingBottom: '16px' }}>
           {posts.map((post, index) => (
             <View
               key={post.id}
@@ -107,65 +121,67 @@ export default function FeedSquare() {
             >
               {/* Hot indicator for top 3 */}
               {index < 3 && (
-                <View className="bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2">
-                  <View className="flex flex-row items-center gap-2">
+                <View style={{ background: 'linear-gradient(to right, #F97316, #FBBF24)', paddingLeft: '16px', paddingRight: '16px', paddingTop: '6px', paddingBottom: '6px' }}>
+                  <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '6px' }}>
                     <Flame size={12} color="#FFFFFF" />
-                    <Text className="block text-white text-xs font-bold">HOT #{index + 1}</Text>
+                    <Text style={{ fontSize: '12px', color: '#FFFFFF', fontWeight: '700' }}>HOT #{index + 1}</Text>
                   </View>
                 </View>
               )}
 
-              <View className="p-4">
+              <View style={{ padding: '16px' }}>
                 {/* Circle info bar */}
                 <View
-                  className="flex flex-row items-center mb-3 bg-stone-50 rounded-xl px-3 py-2"
+                  style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', marginBottom: '12px', backgroundColor: '#FAFAF9', borderRadius: '12px', paddingLeft: '12px', paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px' }}
                   onClick={(e) => { e.stopPropagation(); goToCircleDetail(post.circle_id) }}
                 >
-                  <View className="w-6 h-6 rounded-lg bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center">
-                    <Text className="block text-white" style={{ fontSize: '10px' }}>{(post.circle_name || '圈')[0]}</Text>
+                  <View style={{ width: '24px', height: '24px', borderRadius: '8px', background: 'linear-gradient(to bottom right, #FB923C, #FCD34D)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: '10px', color: '#FFFFFF', fontWeight: '700' }}>{(post.circle_name || '圈')[0]}</Text>
                   </View>
-                  <Text className="block text-sm text-stone-600 font-medium ml-2 flex-1">{post.circle_name}</Text>
+                  <Text style={{ fontSize: '13px', color: '#57534E', fontWeight: '500', marginLeft: '8px', flex: 1 }}>{post.circle_name}</Text>
                   <ChevronRight size={14} color="#A8A29E" />
                 </View>
 
                 {/* User info */}
-                <View className="flex flex-row items-center mb-3">
-                  <View className="w-9 h-9 bg-gradient-to-br from-stone-300 to-stone-400 rounded-full flex items-center justify-center mr-3">
-                    <Text className="block text-white text-xs font-bold">{(post.user_nickname || '?')[0]}</Text>
+                <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', marginBottom: '12px' }}>
+                  <View style={{ width: '36px', height: '36px', background: 'linear-gradient(to bottom right, #D6D3D1, #A8A29E)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '12px' }}>
+                    <Text style={{ fontSize: '12px', color: '#FFFFFF', fontWeight: '700' }}>{(post.user_nickname || '?')[0]}</Text>
                   </View>
-                  <View className="flex-1">
-                    <Text className="block text-sm font-semibold text-stone-700">{post.user_nickname}</Text>
-                    <Text className="block text-xs text-stone-400">{formatTime(post.created_at)}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: '13px', fontWeight: '600', color: '#44403C' }}>{post.user_nickname}</Text>
+                    <Text style={{ fontSize: '11px', color: '#A8A29E' }}>{formatTime(post.created_at)}</Text>
                   </View>
-                  <View className="flex flex-row items-center gap-1 bg-red-50 rounded-full px-3 py-1">
+                  <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px', backgroundColor: '#FEF2F2', borderRadius: '20px', paddingLeft: '10px', paddingRight: '10px', paddingTop: '4px', paddingBottom: '4px' }}>
                     <Heart size={11} color="#EF4444" filled />
-                    <Text className="block text-xs text-red-500 font-semibold">{post.likes_count || 0}</Text>
+                    <Text style={{ fontSize: '12px', color: '#EF4444', fontWeight: '600' }}>{post.likes_count || 0}</Text>
                   </View>
                 </View>
 
                 {/* Content */}
-                <Text className="block text-sm text-stone-600 leading-relaxed mb-3" numberOfLines={4}>
+                <Text style={{ fontSize: '13px', color: '#57534E', lineHeight: '22px', marginBottom: '12px' }} numberOfLines={4}>
                   {post.content}
                 </Text>
 
                 {/* Tags */}
                 {post.tags && post.tags.length > 0 && (
-                  <View className="flex flex-row flex-wrap gap-2 mb-3">
+                  <View style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
                     {post.tags.map((tag: string, idx: number) => (
-                      <Badge key={idx} className="bg-orange-50 text-orange-500 border-0" style={{ fontSize: '11px' }}>#{tag}</Badge>
+                      <View key={idx} style={{ backgroundColor: '#FFF7ED', borderRadius: '10px', paddingLeft: '8px', paddingRight: '8px', paddingTop: '2px', paddingBottom: '2px' }}>
+                        <Text style={{ fontSize: '11px', color: '#F97316' }}>#{tag}</Text>
+                      </View>
                     ))}
                   </View>
                 )}
 
                 {/* Interaction bar */}
-                <View className="flex flex-row items-center gap-5 pt-3 border-t border-stone-100">
-                  <View className="flex flex-row items-center gap-2">
+                <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px', paddingTop: '12px', borderTopWidth: '1px', borderTopColor: '#F5F5F4' }}>
+                  <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '6px' }}>
                     <Heart size={15} color="#A8A29E" />
-                    <Text className="block text-xs text-stone-400">{post.likes_count || 0}</Text>
+                    <Text style={{ fontSize: '12px', color: '#A8A29E' }}>{post.likes_count || 0}</Text>
                   </View>
-                  <View className="flex flex-row items-center gap-2">
+                  <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '6px' }}>
                     <MessageCircle size={15} color="#A8A29E" />
-                    <Text className="block text-xs text-stone-400">{post.comments_count || 0}</Text>
+                    <Text style={{ fontSize: '12px', color: '#A8A29E' }}>{post.comments_count || 0}</Text>
                   </View>
                 </View>
               </View>
