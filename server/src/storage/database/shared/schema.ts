@@ -88,11 +88,23 @@ export const comments = pgTable("comments", {
   content: text("content").notNull(),
   parent_id: varchar("parent_id", { length: 36 }),
   reply_to_id: varchar("reply_to_id", { length: 36 }),
+  likes_count: integer("likes_count").notNull().default(0),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("comments_post_id_idx").on(table.post_id),
   index("comments_user_id_idx").on(table.user_id),
   index("comments_parent_id_idx").on(table.parent_id),
+]);
+
+// ===== Comment Likes =====
+export const commentLikes = pgTable("comment_likes", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  comment_id: varchar("comment_id", { length: 36 }).notNull().references(() => comments.id, { onDelete: "cascade" }),
+  user_id: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("comment_likes_comment_id_idx").on(table.comment_id),
+  index("comment_likes_user_id_idx").on(table.user_id),
 ]);
 
 // ===== Activities (找搭子) =====
@@ -128,6 +140,8 @@ export const activityRegistrations = pgTable("activity_registrations", {
   activity_id: varchar("activity_id", { length: 36 }).notNull().references(() => activities.id, { onDelete: "cascade" }),
   user_id: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
   status: varchar("status", { length: 20 }).notNull().default("pending"),
+  emergency_contact_name: varchar("emergency_contact_name", { length: 64 }),
+  emergency_contact_phone: varchar("emergency_contact_phone", { length: 32 }),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("activity_registrations_activity_id_idx").on(table.activity_id),

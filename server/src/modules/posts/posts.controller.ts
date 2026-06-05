@@ -1,100 +1,66 @@
-import { Controller, Get, Post, Put, Body, Param, Query } from '@nestjs/common'
+import { Controller, Get, Post, Delete, Body, Param, Query, Put } from '@nestjs/common'
 import { PostsService } from './posts.service'
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
-  @Get()
-  async listPosts(
-    @Query('circle_id') circleId: string,
-    @Query('sort') sort: string = 'latest',
-  ) {
-    console.log('[Posts] GET /api/posts', { circleId, sort })
-    const result = await this.postsService.listPosts(circleId, sort)
-    return { code: 200, msg: 'success', data: result }
-  }
-
   @Get('featured')
-  async getFeaturedPosts(
-    @Query('user_id') userId: string,
-  ) {
-    console.log('[Posts] GET /api/posts/featured', { userId })
-    const result = await this.postsService.getFeaturedPosts(userId)
-    return { code: 200, msg: 'success', data: result }
+  async getFeaturedPosts(@Query('user_id') userId: string) {
+    return { data: await this.postsService.getFeaturedPosts(userId) }
   }
 
   @Get(':id')
-  async getPost(@Param('id') id: string) {
-    console.log('[Posts] GET /api/posts/:id', id)
-    const result = await this.postsService.getPost(id)
-    return { code: 200, msg: 'success', data: result }
-  }
-
-  @Post()
-  async createPost(@Body() body: { circle_id: string; user_id: string; content: string; images?: string[]; tags?: string[]; is_draft?: boolean }) {
-    console.log('[Posts] POST /api/posts', JSON.stringify({ ...body, content: body.content?.slice(0, 50) }))
-    const result = await this.postsService.createPost(body)
-    return { code: 200, msg: 'success', data: result }
-  }
-
-  @Post('like')
-  async likePost(@Body() body: { post_id: string; user_id: string }) {
-    console.log('[Posts] POST /api/posts/like', JSON.stringify(body))
-    const result = await this.postsService.likePost(body)
-    return { code: 200, msg: 'success', data: result }
+  async getPost(@Param('id') id: string, @Query('user_id') userId?: string) {
+    const post = await this.postsService.getPost(id, userId)
+    return { data: post }
   }
 
   @Get(':id/comments')
-  async getComments(@Param('id') postId: string) {
-    console.log('[Posts] GET /api/posts/:id/comments', postId)
-    const result = await this.postsService.getComments(postId)
-    return { code: 200, msg: 'success', data: result }
+  async getComments(@Param('id') postId: string, @Query('user_id') userId?: string) {
+    return { data: await this.postsService.getComments(postId, userId) }
+  }
+
+  @Post()
+  async createPost(
+    @Body() body: { circle_id: string; user_id: string; content: string; images?: string[]; tags?: string[]; is_draft?: boolean },
+  ) {
+    return { data: await this.postsService.createPost(body) }
+  }
+
+  @Post(':id/like')
+  async likePost(@Param('id') id: string, @Body() body: { user_id: string }) {
+    return this.postsService.likePost({ post_id: id, user_id: body.user_id })
   }
 
   @Post(':id/comments')
   async createComment(
     @Param('id') postId: string,
-    @Body() body: { user_id: string; content: string; parent_id?: string; reply_to_nickname?: string },
+    @Body() body: { user_id: string; content: string; parent_id?: string; reply_to_user_id?: string },
   ) {
-    console.log('[Posts] POST /api/posts/:id/comments', postId, JSON.stringify(body))
-    const result = await this.postsService.createComment(postId, body)
-    return { code: 200, msg: 'success', data: result }
+    return { data: await this.postsService.createComment(postId, body) }
+  }
+
+  @Delete(':id')
+  async deletePost(@Param('id') id: string, @Body() body: { user_id: string }) {
+    return this.postsService.deletePost(id, body.user_id)
   }
 
   @Put(':id')
-  async updatePost(@Param('id') id: string, @Body() body: { content?: string; is_draft?: boolean }) {
-    console.log('[Posts] PUT /api/posts/:id', id)
-    const result = await this.postsService.updatePost(id, body)
-    return { code: 200, msg: 'success', data: result }
-  }
-}
-
-@Controller('circles')
-export class CirclePostsController {
-  constructor(private readonly postsService: PostsService) {}
-
-  @Get(':circleId/posts')
-  async getCirclePosts(
-    @Param('circleId') circleId: string,
-    @Query('sort') sort: string = 'latest',
+  async updatePost(
+    @Param('id') id: string,
+    @Body() body: { content?: string; is_draft?: boolean },
   ) {
-    console.log('[CirclePosts] GET /api/circles/:circleId/posts', { circleId, sort })
-    const result = await this.postsService.listPosts(circleId, sort)
-    return { code: 200, msg: 'success', data: result }
+    return { data: await this.postsService.updatePost(id, body) }
   }
-}
 
-@Controller('comments')
-export class CommentsController {
-  constructor(private readonly postsService: PostsService) {}
+  @Post(':id/comments/:commentId/like')
+  async likeComment(@Param('commentId') commentId: string, @Body() body: { user_id: string }) {
+    return this.postsService.likeComment({ comment_id: commentId, user_id: body.user_id })
+  }
 
-  @Post()
-  async createComment(
-    @Body() body: { post_id: string; user_id: string; content: string; parent_id?: string; reply_to_nickname?: string },
-  ) {
-    console.log('[Comments] POST /api/comments', JSON.stringify(body))
-    const result = await this.postsService.createComment(body.post_id, body)
-    return { code: 200, msg: 'success', data: result }
+  @Delete(':id/comments/:commentId')
+  async deleteComment(@Param('commentId') commentId: string, @Body() body: { user_id: string }) {
+    return this.postsService.deleteComment(commentId, body.user_id)
   }
 }

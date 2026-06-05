@@ -115,8 +115,12 @@ export class ActivitiesService {
     return data
   }
 
-  async registerActivity(body: { activity_id: string; user_id: string; emergency_contact?: string }) {
+  async registerActivity(body: { activity_id: string; user_id: string; emergency_contact_name?: string; emergency_contact_phone?: string; safety_agreed: boolean }) {
     const client = getSupabaseClient()
+
+    if (!body.safety_agreed) {
+      throw new Error('报名前必须阅读安全须知并勾选同意')
+    }
 
     // Check activity exists and is recruiting
     const { data: activity } = await client
@@ -144,7 +148,8 @@ export class ActivitiesService {
         activity_id: body.activity_id,
         user_id: body.user_id,
         status,
-        emergency_contact: body.emergency_contact,
+        emergency_contact_name: body.emergency_contact_name,
+        emergency_contact_phone: body.emergency_contact_phone,
       })
       .select()
       .maybeSingle()
@@ -224,4 +229,93 @@ export class ActivitiesService {
 
     return data
   }
+
+  async getRegistrations(activityId: string) {
+    const client = getSupabaseClient()
+    const { data, error } = await client
+      .from('activity_registrations')
+      .select('id, user_id, status, emergency_contact_name, emergency_contact_phone, created_at, users(nickname, avatar_url)')
+      .eq('activity_id', activityId)
+      .order('created_at', { ascending: true })
+    if (error) throw new Error(`Get registrations failed: ${error.message}`)
+    return data
+  }
+
+  async getUserRegistrationStatus(activityId: string, userId: string) {
+    const client = getSupabaseClient()
+    const { data, error } = await client
+      .from('activity_registrations')
+      .select('id, status, created_at')
+      .eq('activity_id', activityId)
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (error) throw new Error(`Get registration status failed: ${error.message}`)
+    return data
+  }
+
+  async updateActivityStatus(activityId: string, userId: string, status: string) {
+    const client = getSupabaseClient()
+
+    // Verify the user is the organizer
+    const { data: activity } = await client
+      .from('activities')
+      .select('user_id')
+      .eq('id', activityId)
+      .maybeSingle()
+    if (!activity) throw new Error('活动不存在')
+    if (activity.user_id !== userId) throw new Error('只有发起人可以修改活动状态')
+
+    const { data, error } = await client
+      .from('activities')
+      .update({ status })
+      .eq('id', activityId)
+      .select()
+      .maybeSingle()
+    if (error) throw new Error(`Update activity status failed: ${error.message}`)
+
+    // Notify all registered users
+    if (status === 'cancelled' || status === 'completed') {
+      const { data: registrations } = await client
+        .from('activity_registrations')
+        .select('user_id')
+        .eq('activity_id', activityId)
+        .eq('status', 'approved')
+
+      if (registrations && registrations.length > 0) {
+        const messages = registrations.map(r => ({
+          user_id: r.user_id,
+          type: 'activity_update',
+          title: status === 'cancelled' ? '活动已取消' : '活动已完成',
+          content: status === 'cancelled' ? '您报名的活动已被发起人取消' : '您报名的活动已标记为完成',
+          related_id: activityId,
+        }))
+        await client.from('messages').insert(messages)
+      }
+    }
+
+    return data
+  }
+
+  async cancelActivity(activityId: string, userId: string) {
+    const client = getSupabaseClient()
+    const { error } = await client
+      .from('activities')
+      .update({ status: 'cancelled' })
+      .eq('id', activityId)
+      .eq('created_by', userId)
+    if (error) throw new Error(`Cancel activity failed: ${error.message}`)
+    return { success: true }
+  }
+
+  async completeActivity(activityId: string, userId: string) {
+    const client = getSupabaseClient()
+    const { error } = await client
+      .from('activities')
+      .update({ status: 'completed' })
+      .eq('id', activityId)
+      .eq('created_by', userId)
+    if (error) throw new Error(`Complete activity failed: ${error.message}`)
+    return { success: true }
+  }
+
 }

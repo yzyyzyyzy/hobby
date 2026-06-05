@@ -397,7 +397,7 @@ export default function CircleDetail() {
                     <Text className="block text-sm text-stone-400">暂无动态，来发第一条吧</Text>
                   </View>
                 ) : posts.map(post => (
-                  <View key={post.id} className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
+                  <View key={post.id} className="bg-white rounded-2xl p-4 mb-3 shadow-sm" onClick={() => Taro.navigateTo({ url: `/pages/post-detail/index?id=${post.id}` })}>
                     <View className="flex flex-row items-center gap-3 mb-3">
                       <View className="w-9 h-9 bg-gradient-to-br from-orange-400 to-amber-400 rounded-full flex items-center justify-center">
                         <Text className="block text-white text-xs font-bold">{post.nickname?.charAt(0) || '?'}</Text>
